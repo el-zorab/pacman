@@ -1,27 +1,14 @@
+#include <fstream>
 #include <stdio.h>
-
 #include <SDL2/SDL_image.h>
 
 #include "game.hpp"
 #include "gameConstants.hpp"
 
-Game::Game() {
-    window = nullptr;
-    windowWidth = 0;
-    windowHeight = 0;
+bool tiles[GameConstants::TILE_ROWS - 1][GameConstants::TILE_COLS - 1];
 
-    renderer = nullptr;
-
-    pacman = nullptr;
-
-    gameRunning = false;
-}
-
-void Game::init(std::string title, int x, int y) {
-    windowWidth  = GameConstants::HORIZONTAL_TILES * GameConstants::TILE_SIZE;
-    windowHeight = GameConstants::VERTICAL_TILES   * GameConstants::TILE_SIZE;
-
-    window = SDL_CreateWindow(title.c_str(), x, y, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
+Game::Game(std::string title, int x, int y) {
+    window = SDL_CreateWindow(title.c_str(), x, y, GameConstants::WINDOW_WIDTH, GameConstants::WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         printf("SDL_CreateWindow error: %s\n", SDL_GetError());
         exit(-1);
@@ -39,10 +26,29 @@ void Game::init(std::string title, int x, int y) {
         exit(-1);
     }
 
-    pacman = std::make_unique<Pacman>(); 
-    pacman->init(renderer);
-
     gameRunning = true;
+
+    frameTimer = std::make_unique<Timer>();
+
+    pacman = std::make_unique<Pacman>(renderer);
+
+    std::ifstream tilingFile("res/tiling.dat");
+
+    for (int i = 0; i < GameConstants::TILE_ROWS - 1; i++) {
+        for (int j = 0; j < GameConstants::TILE_COLS - 1; j++) {
+            char c;
+            tilingFile >> c;
+            tiles[i][j] = int(c) - '0';
+            printf("%d ", (int) tiles[i][j]);
+        }
+        printf("\n");
+    }
+
+    frameTimer->start();
+}
+
+Game::~Game() {
+    close();
 }
 
 void Game::close() {
@@ -69,8 +75,17 @@ void Game::handleKeyboardEvents() {
             stopRunning();
         } else if (event.type == SDL_KEYDOWN) {
             switch (event.key.keysym.sym) {
+                case SDLK_LEFT:
+                    pacman->setOrientation(PacmanOrientation::LEFT);
+                    break;
+                case SDLK_RIGHT:
+                    pacman->setOrientation(PacmanOrientation::RIGHT);
+                    break;
                 case SDLK_UP:
-                    printf("up\n");
+                    pacman->setOrientation(PacmanOrientation::UP);
+                    break;
+                case SDLK_DOWN:
+                    pacman->setOrientation(PacmanOrientation::DOWN);
                     break;
             }
         }
@@ -78,37 +93,66 @@ void Game::handleKeyboardEvents() {
 }
 
 void Game::update() {
-    pacman->update();
+    float deltaTime = frameTimer->getTicks() / 1000.f;
+    frameTimer->start();
+
+    pacman->update(deltaTime);
 }
 
 void Game::render() {
-    Game::renderBackground(); // this will also clear the window
+    // rendering the background will also clear the window
+    renderBackground();
 
-    pacman->render();
+    SDL_SetRenderDrawColor(renderer, 127, 127, 127, 255);
 
-    SDL_RenderPresent(renderer);
+    SDL_RenderDrawLine(renderer, GameConstants::WINDOW_WIDTH / 2, 0,
+                                 GameConstants::WINDOW_WIDTH / 2, GameConstants::WINDOW_HEIGHT);
 
-    SDL_Delay(300);
-}
-
-void Game::renderBackground() {
-    const int BG_TILE_GRAYSCALE_A = 0;
-    const int BG_TILE_GRAYSCALE_B = 20;
-
-    for (int i = 0; i < GameConstants::HORIZONTAL_TILES; i++) {
-        for (int j = 0; j < GameConstants::VERTICAL_TILES; j++) {
+    for (int i = 0; i < GameConstants::TILE_ROWS - 1; i++) {
+        for (int j = 0; j < GameConstants::TILE_COLS - 1; j++) {
             SDL_Rect tileRect = {
-                GameConstants::TILE_SIZE * i,
-                GameConstants::TILE_SIZE * j,
+                GameConstants::TILE_SIZE * j + 8,
+                GameConstants::TILE_SIZE * i + 8,
                 GameConstants::TILE_SIZE,
                 GameConstants::TILE_SIZE
             };
 
-            if ((i + j) % 2 == 0) {
-                SDL_SetRenderDrawColor(renderer, BG_TILE_GRAYSCALE_A, BG_TILE_GRAYSCALE_A, BG_TILE_GRAYSCALE_A, 255);
-            } else {
-                SDL_SetRenderDrawColor(renderer, BG_TILE_GRAYSCALE_B, BG_TILE_GRAYSCALE_B, BG_TILE_GRAYSCALE_B, 255);
+            if (tiles[i][j]) {
+                SDL_RenderDrawRect(renderer, &tileRect);
             }
+        }
+    }
+
+    pacman->render();
+
+    SDL_RenderPresent(renderer);
+}
+
+void Game::renderBackground() {
+    const int BG_TILE_GRAYSCALE_A = 0;
+    const int BG_TILE_GRAYSCALE_B = 25;
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    
+    for (int i = 0; i < GameConstants::TILE_ROWS; i++) {
+        for (int j = 0; j < GameConstants::TILE_COLS; j++) {
+            SDL_Rect tileRect = {
+                GameConstants::TILE_SIZE * j,
+                GameConstants::TILE_SIZE * i,
+                GameConstants::TILE_SIZE,
+                GameConstants::TILE_SIZE
+            };
+
+            // if (tiles[i][j]) {
+            //     SDL_SetRenderDrawColor(renderer, 127, 0, 0, 255);
+            // } else {
+                if ((i + j) % 2 == 0) {
+                    SDL_SetRenderDrawColor(renderer, BG_TILE_GRAYSCALE_A, BG_TILE_GRAYSCALE_A, BG_TILE_GRAYSCALE_A, 255);
+                } else {
+                    SDL_SetRenderDrawColor(renderer, BG_TILE_GRAYSCALE_B, BG_TILE_GRAYSCALE_B, BG_TILE_GRAYSCALE_B, 255);
+                }
+            // }
 
             SDL_RenderFillRect(renderer, &tileRect);
         }

@@ -5,13 +5,13 @@
 #include <string>
 
 #include "pacman.hpp"
+#include "timer.hpp"
 
 class Game {
 
 public:
-    Game();
-
-    void init(std::string title, int x, int y);
+    Game(std::string title, int x, int y);
+    ~Game();
     void close();
 
     bool isGameRunning();
@@ -25,12 +25,11 @@ private:
     SDL_Window *window;
     int windowWidth;
     int windowHeight;
-
     SDL_Renderer *renderer;
+    bool gameRunning;
+    std::unique_ptr<Timer> frameTimer;
 
     std::unique_ptr<Pacman> pacman;
-
-    bool gameRunning;
 
     void renderBackground();
 };

@@ -9,9 +9,7 @@
 int main(int argc, char* argv[]) {
     (void) argc; (void) argv;
 
-    std::unique_ptr<Game> game = std::make_unique<Game>();
-
-    game->init("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    std::unique_ptr<Game> game = std::make_unique<Game>("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
     while (game->isGameRunning()) {
         game->handleKeyboardEvents();
