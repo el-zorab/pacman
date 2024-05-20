@@ -2,23 +2,22 @@
 
 #include <SDL2/SDL_image.h>
 
+#include "game.hpp"
 #include "gameConstants.hpp"
-#include "gameController.hpp"
-#include "texture.hpp"
 
-SDL_Texture *pacman = nullptr;
-
-GameController::GameController() {
+Game::Game() {
     window = nullptr;
     windowWidth = 0;
     windowHeight = 0;
 
     renderer = nullptr;
 
+    pacman = nullptr;
+
     gameRunning = false;
 }
 
-void GameController::init(std::string title, int x, int y) {
+void Game::init(std::string title, int x, int y) {
     windowWidth  = GameConstants::HORIZONTAL_TILES * GameConstants::TILE_SIZE;
     windowHeight = GameConstants::VERTICAL_TILES   * GameConstants::TILE_SIZE;
 
@@ -40,12 +39,13 @@ void GameController::init(std::string title, int x, int y) {
         exit(-1);
     }
 
-    pacman = loadTexture(renderer, "pacman.png");
+    pacman = std::make_unique<Pacman>(); 
+    pacman->init(renderer);
 
     gameRunning = true;
 }
 
-void GameController::close() {
+void Game::close() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     renderer = nullptr;
@@ -54,15 +54,15 @@ void GameController::close() {
     SDL_Quit();
 }
 
-bool GameController::isGameRunning() {
+bool Game::isGameRunning() {
     return gameRunning;
 }
 
-void GameController::stopRunning() {
+void Game::stopRunning() {
     gameRunning = false;
 }
 
-void GameController::handleKeyboardEvents() {
+void Game::handleKeyboardEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
@@ -77,30 +77,21 @@ void GameController::handleKeyboardEvents() {
     }
 }
 
-int rotation = 0;
-
-void GameController::update() {
-    rotation++;
-    rotation &= 3;
+void Game::update() {
+    pacman->update();
 }
 
-void GameController::render() {
-    GameController::renderBackground(); // this will also clear the window
+void Game::render() {
+    Game::renderBackground(); // this will also clear the window
 
-    SDL_Rect destrect = {
-        3 * GameConstants::TILE_SIZE + GameConstants::TILE_SIZE / 2,
-        4 * GameConstants::TILE_SIZE + GameConstants::TILE_SIZE / 2,
-        32,
-        32
-    };
+    pacman->render();
 
-    SDL_RenderCopyEx(renderer, pacman, NULL, &destrect, rotation * 90, NULL, SDL_FLIP_NONE);
     SDL_RenderPresent(renderer);
 
     SDL_Delay(300);
 }
 
-void GameController::renderBackground() {
+void Game::renderBackground() {
     const int BG_TILE_GRAYSCALE_A = 0;
     const int BG_TILE_GRAYSCALE_B = 20;
 

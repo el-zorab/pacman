@@ -4,22 +4,22 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
-#include "gameController.hpp"
+#include "game.hpp"
 
 int main(int argc, char* argv[]) {
     (void) argc; (void) argv;
 
-    std::unique_ptr<GameController> gameController(new GameController());
+    std::unique_ptr<Game> game = std::make_unique<Game>();
 
-    gameController->init("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    game->init("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
-    while (gameController->isGameRunning()) {
-        gameController->handleKeyboardEvents();
-        gameController->update();
-        gameController->render();
+    while (game->isGameRunning()) {
+        game->handleKeyboardEvents();
+        game->update();
+        game->render();
     }
 
-    gameController->close();
+    game->close();
 
     return 0;
 }

@@ -1,12 +1,15 @@
 #pragma once
 
+#include <memory>
 #include <SDL2/SDL.h>
 #include <string>
 
-class GameController {
+#include "pacman.hpp"
+
+class Game {
 
 public:
-    GameController();
+    Game();
 
     void init(std::string title, int x, int y);
     void close();
@@ -24,6 +27,8 @@ private:
     int windowHeight;
 
     SDL_Renderer *renderer;
+
+    std::unique_ptr<Pacman> pacman;
 
     bool gameRunning;
 
