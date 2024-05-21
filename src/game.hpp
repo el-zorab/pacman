@@ -11,13 +11,12 @@ class Game {
 
 public:
     Game(std::string title, int x, int y);
-    ~Game();
     void close();
 
     bool isGameRunning();
     void stopRunning();
 
-    void handleKeyboardEvents();
+    void handleEvents();
     void update();
     void render();
 

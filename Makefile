@@ -6,7 +6,7 @@ DEP := $(OBJ:.o=.d)
 
 CC := g++
 CC_FLAGS := -Wall -Wextra -pedantic -MMD
-LD_FLAGS := -lSDL2 -lSDL2_image
+LD_FLAGS := -lSDL2 -lSDL2main -lSDL2_image -lSDL2_ttf
 
 WIN_SDL_LIB := C:\sdl2-dev
 WIN := no

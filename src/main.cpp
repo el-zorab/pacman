@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<Game> game = std::make_unique<Game>("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
     while (game->isGameRunning()) {
-        game->handleKeyboardEvents();
+        game->handleEvents();
         game->update();
         game->render();
     }

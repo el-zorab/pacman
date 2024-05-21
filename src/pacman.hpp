@@ -16,9 +16,9 @@ class Pacman {
 
 public:
     Pacman(SDL_Renderer *renderer);
-    ~Pacman();
     void close();
 
+    void setDesiredOrientation(PacmanOrientation orientation);
     void setOrientation(PacmanOrientation orientation);
 
     void update(float deltaTime);
@@ -29,8 +29,9 @@ private:
     SDL_Texture *textureOriented;
     SDL_Texture *textureUnoriented;
 
-    PacmanOrientation orientation;
-    float x, y;
+    PacmanOrientation orientation, desiredOrientation;
+    int x, y;
+    bool moving;
 
     std::unique_ptr<Timer> animationTimer;
     int animationIndex;
