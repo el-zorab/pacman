@@ -5,6 +5,7 @@
 
 #include "game.hpp"
 #include "gameConstants.hpp"
+#include "tilingManager.hpp"
 
 bool tiles[GameConstants::TILE_ROWS][GameConstants::TILE_COLS];
 
@@ -40,20 +41,12 @@ Game::Game(std::string title, int x, int y) {
     SDL_RenderSetViewport(renderer, &rendererViewport);
 
     gameRunning = true;
-    frameTimer = std::make_unique<Timer>();
+
+    TilingManager::getInstance().loadTiling();
 
     pacman = std::make_unique<Pacman>(renderer);
 
-    std::ifstream tilingFile("res/tiling.dat");
-
-    for (int i = 0; i < GameConstants::TILE_ROWS; i++) {
-        for (int j = 0; j < GameConstants::TILE_COLS; j++) {
-            char c;
-            tilingFile >> c;
-            tiles[i][j] = int(c) - '0';
-        }
-    }
-
+    frameTimer = std::make_unique<Timer>();
     frameTimer->start();
 }
 
@@ -87,19 +80,19 @@ void Game::handleEvents() {
             switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
                 case SDLK_a:
-                    pacman->setDesiredOrientation(PacmanOrientation::LEFT);
+                    pacman->setDesiredOrientation(Pacman::Orientation::LEFT);
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
-                    pacman->setDesiredOrientation(PacmanOrientation::RIGHT);
+                    pacman->setDesiredOrientation(Pacman::Orientation::RIGHT);
                     break;
                 case SDLK_UP:
                 case SDLK_w:
-                    pacman->setDesiredOrientation(PacmanOrientation::UP);
+                    pacman->setDesiredOrientation(Pacman::Orientation::UP);
                     break;
                 case SDLK_DOWN:
                 case SDLK_s:
-                    pacman->setDesiredOrientation(PacmanOrientation::DOWN);
+                    pacman->setDesiredOrientation(Pacman::Orientation::DOWN);
                     break;
             }
         }
@@ -117,47 +110,23 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 31, 31, 127, 255);
     SDL_RenderClear(renderer);
 
-    // rendering the background will also clear the window
-    renderBackground();
-
-    SDL_SetRenderDrawColor(renderer, 127, 127, 127, 255);
-
-    SDL_RenderDrawLine(renderer,
-        GameConstants::WINDOW_WIDTH / 2, 0,
-        GameConstants::WINDOW_WIDTH / 2, GameConstants::WINDOW_HEIGHT);
-
-    for (int i = 0; i < GameConstants::TILE_ROWS; i++) {
-        for (int j = 0; j < GameConstants::TILE_COLS; j++) {
-            SDL_Rect tileRect = {
-                GameConstants::TILE_SIZE * j,
-                GameConstants::TILE_SIZE * i,
-                GameConstants::TILE_SIZE,
-                GameConstants::TILE_SIZE
-            };
-
-            if (tiles[i][j]) {
-                SDL_RenderDrawRect(renderer, &tileRect);
-            }
-        }
-    }
+    renderBackgroundTiling();
+    renderTiling();
 
     pacman->render();
 
     SDL_RenderPresent(renderer);
 }
 
-void Game::renderBackground() {
+void Game::renderBackgroundTiling() {
     SDL_Color BG_TILE_COLOR_A = { 0, 0, 0, 255 };
     SDL_Color BG_TILE_COLOR_B = { 25, 25, 25, 255 };
-
-    // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    // SDL_RenderClear(renderer);
     
-    for (int i = 0; i < GameConstants::TILE_ROWS; i++) {
-        for (int j = 0; j < GameConstants::TILE_COLS; j++) {
+    for (int i = 0; i < GameConstants::TILE_COLS; i++) {
+        for (int j = 0; j < GameConstants::TILE_ROWS; j++) {
             SDL_Rect tileRect = {
-                GameConstants::TILE_SIZE * j,
                 GameConstants::TILE_SIZE * i,
+                GameConstants::TILE_SIZE * j,
                 GameConstants::TILE_SIZE,
                 GameConstants::TILE_SIZE
             };
@@ -165,6 +134,29 @@ void Game::renderBackground() {
             SDL_Color color = (i + j) % 2 == 0 ? BG_TILE_COLOR_A : BG_TILE_COLOR_B;
             SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
             SDL_RenderFillRect(renderer, &tileRect);
+        }
+    }
+}
+
+void Game::renderTiling() {
+    SDL_SetRenderDrawColor(renderer, 127, 127, 127, 255);
+
+    SDL_RenderDrawLine(renderer,
+        GameConstants::WINDOW_WIDTH / 2, 0,
+        GameConstants::WINDOW_WIDTH / 2, GameConstants::WINDOW_HEIGHT);
+
+    for (int i = 0; i < GameConstants::TILE_COLS; i++) {
+        for (int j = 0; j < GameConstants::TILE_ROWS; j++) {
+            if (!TilingManager::getInstance().getTilingAt(i, j)) continue;
+
+            SDL_Rect tileRect = {
+                GameConstants::TILE_SIZE * i,
+                GameConstants::TILE_SIZE * j,
+                GameConstants::TILE_SIZE,
+                GameConstants::TILE_SIZE
+            };
+
+            SDL_RenderDrawRect(renderer, &tileRect);
         }
     }
 }

@@ -26,9 +26,11 @@ private:
     int windowHeight;
     SDL_Renderer *renderer;
     bool gameRunning;
-    std::unique_ptr<Timer> frameTimer;
 
     std::unique_ptr<Pacman> pacman;
 
-    void renderBackground();
+    std::unique_ptr<Timer> frameTimer;
+
+    void renderBackgroundTiling();
+    void renderTiling();
 };
