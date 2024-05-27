@@ -9,16 +9,17 @@
 int main(int argc, char* argv[]) {
     (void) argc; (void) argv;
 
-    std::unique_ptr<Game> game = std::make_unique<Game>("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    Game &game = Game::getInstance();
 
-    while (game->isGameRunning()) {
-        game->handleEvents();
-        game->update();
-        game->render();
-        // SDL_Delay(50);
+    game.init("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
+    while (game.isGameRunning()) {
+        game.handleEvents();
+        game.update();
+        game.render();
     }
 
-    game->close();
+    game.close();
 
     return 0;
 }

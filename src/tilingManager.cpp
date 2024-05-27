@@ -3,14 +3,9 @@
 
 #include "tilingManager.hpp"
 
-std::string TILING_FILE_PATH = "res/tiling.dat";
+const std::string TILING_FILE_PATH = "res/tiling.dat";
 
-TilingManager::TilingManager() {}
-
-TilingManager &TilingManager::getInstance() {
-    static std::unique_ptr<TilingManager> instance(new TilingManager());
-    return *instance;
-}
+TilingManager::TilingManager(){}
 
 void TilingManager::loadTiling() {
     std::ifstream tilingFile(TILING_FILE_PATH);
@@ -26,7 +21,7 @@ void TilingManager::loadTiling() {
     tilingFile.close();
 }
 
-int TilingManager::getTilingAt(int x, int y) {
+int TilingManager::isTileFree(int x, int y) {
     if (x < 0 || y < 0 || x >= GameConstants::TILE_COLS || y >= GameConstants::TILE_ROWS) return 0;
-    return tiling[x][y];
+    return !tiling[x][y];
 }

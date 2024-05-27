@@ -1,5 +1,5 @@
 #pragma once
 
-struct Tile {
+struct Entity2D {
     int x, y;
 };

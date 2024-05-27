@@ -5,11 +5,17 @@
 
 #include "game.hpp"
 #include "gameConstants.hpp"
+#include "textureManager.hpp"
 #include "tilingManager.hpp"
 
-bool tiles[GameConstants::TILE_ROWS][GameConstants::TILE_COLS];
+Game::Game(_ctr_tag){}
 
-Game::Game(std::string title, int x, int y) {
+Game &Game::getInstance() {
+    static std::unique_ptr<Game> instance = std::make_unique<Game>(_ctr_tag{});
+    return *instance;
+}
+
+void Game::init(std::string title, int x, int y) {
     window = SDL_CreateWindow(title.c_str(), x, y, GameConstants::WINDOW_BORDERED_WIDTH, GameConstants::WINDOW_BORDERED_HEIGHT, SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         printf("SDL_CreateWindow error: %s\n", SDL_GetError());
@@ -41,8 +47,11 @@ Game::Game(std::string title, int x, int y) {
     SDL_RenderSetViewport(renderer, &rendererViewport);
 
     gameRunning = true;
-
-    TilingManager::getInstance().loadTiling();
+    
+    fontRenderer = std::make_unique<FontRenderer>("jetbrains_mono_regular.ttf", GameConstants::TILE_SIZE);
+    textureManager = std::make_unique<TextureManager>();
+    tilingManager = std::make_unique<TilingManager>();
+    tilingManager->loadTiling();
 
     pacman = std::make_unique<Pacman>(renderer);
 
@@ -51,7 +60,8 @@ Game::Game(std::string title, int x, int y) {
 }
 
 void Game::close() {
-    pacman->close();
+    fontRenderer->close();
+    textureManager->close();
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -71,6 +81,18 @@ void Game::stopRunning() {
     gameRunning = false;
 }
 
+FontRenderer &Game::getFontRenderer() {
+    return *fontRenderer;
+}
+
+TextureManager &Game::getTextureManager() {
+    return *textureManager;
+}
+
+TilingManager &Game::getTilingManager() {
+    return *tilingManager;
+}
+
 void Game::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -80,19 +102,19 @@ void Game::handleEvents() {
             switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
                 case SDLK_a:
-                    pacman->setDesiredOrientation(Pacman::Orientation::LEFT);
+                    pacman->setDesiredOrientation(Orientation::LEFT);
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
-                    pacman->setDesiredOrientation(Pacman::Orientation::RIGHT);
+                    pacman->setDesiredOrientation(Orientation::RIGHT);
                     break;
                 case SDLK_UP:
                 case SDLK_w:
-                    pacman->setDesiredOrientation(Pacman::Orientation::UP);
+                    pacman->setDesiredOrientation(Orientation::UP);
                     break;
                 case SDLK_DOWN:
                 case SDLK_s:
-                    pacman->setDesiredOrientation(Pacman::Orientation::DOWN);
+                    pacman->setDesiredOrientation(Orientation::DOWN);
                     break;
             }
         }
@@ -108,7 +130,7 @@ void Game::update() {
 
 void Game::render() {
     renderBackground();
-    renderTiling();
+    renderMap();
 
     pacman->render();
 
@@ -135,20 +157,22 @@ void Game::renderBackground() {
     }
 }
 
-void Game::renderTiling() {
-    SDL_SetRenderDrawColor(renderer, 127, 127, 127, 255);
+void Game::renderMap() {
+    const int offset = 1;
+
+    SDL_SetRenderDrawColor(renderer, 52, 110, 235, 255);
     for (int i = 0; i < GameConstants::TILE_COLS; i++) {
         for (int j = 0; j < GameConstants::TILE_ROWS; j++) {
-            if (!TilingManager::getInstance().getTilingAt(i, j)) continue;
+            if (tilingManager->isTileFree(i, j)) continue;
 
             SDL_Rect tileRect = {
-                GameConstants::TILE_SIZE * i,
-                GameConstants::TILE_SIZE * j,
-                GameConstants::TILE_SIZE,
-                GameConstants::TILE_SIZE
+                GameConstants::TILE_SIZE * i + offset,
+                GameConstants::TILE_SIZE * j + offset,
+                GameConstants::TILE_SIZE - 2 * offset,
+                GameConstants::TILE_SIZE - 2 * offset
             };
 
-            SDL_RenderDrawRect(renderer, &tileRect);
+            SDL_RenderFillRect(renderer, &tileRect);
         }
     }
 }
