@@ -1,6 +1,7 @@
 #include <cmath>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <string>
 
 #include "gameConstants.hpp"
 #include "pacman.hpp"
@@ -8,15 +9,12 @@
 #include "tile.hpp"
 #include "tilingManager.hpp"
 
-TTF_Font *jetbrainsMono = nullptr;
+using GameConstants::TILE_SIZE;
 
-static const int PACMAN_W = 32;
-static const int PACMAN_H = 32;
-
-static const std::string PACMAN_TEXTURE_ORIENTED_PATH = "res/pacman_oriented.png";
+static const std::string PACMAN_TEXTURE_ORIENTED_PATH   = "res/pacman_oriented.png";
 static const std::string PACMAN_TEXTURE_UNORIENTED_PATH = "res/pacman_unoriented.png";
 
-Tile tilesToCheck[4][2];
+TTF_Font *jetbrainsMono = nullptr;
 
 Pacman::Pacman(SDL_Renderer *renderer) {
     this->renderer = renderer;
@@ -24,27 +22,32 @@ Pacman::Pacman(SDL_Renderer *renderer) {
     textureOriented = loadTexture(renderer, PACMAN_TEXTURE_ORIENTED_PATH, true);
     textureUnoriented = loadTexture(renderer, PACMAN_TEXTURE_UNORIENTED_PATH, true);
 
-    orientation = desiredOrientation = Orientation::RIGHT;
+    orientation = desiredOrientation = Orientation::LEFT;
 
-    x = xStartTile = xEndTile = 0;
-    y = yStartTile = yEndTile = 0;
+    x = xTile = xEndTile = 0;
+    y = yTile = yEndTile = 0;
+
+    y = 208;
+    x = 16;
     moving = true;
+
+    warping = false;
 
     animationTimer = std::make_unique<Timer>();
     animationIndex = 0;
 
-    jetbrainsMono = TTF_OpenFont("res/JetBrainsMono-Regular.ttf", 16);
+    jetbrainsMono = TTF_OpenFont("res/jetbrains_mono_regular.ttf", 16);
 
     animationTimer->start();
 
-    tilesToCheck[Orientation::LEFT][0] = {-1, 0};
-    tilesToCheck[Orientation::LEFT][1] = {-1, 1};
-    tilesToCheck[Orientation::RIGHT][0] = {2, 0};
-    tilesToCheck[Orientation::RIGHT][1] = {2, 1};
-    tilesToCheck[Orientation::UP][0] = {0, -1};
-    tilesToCheck[Orientation::UP][1] = {1, -1};
-    tilesToCheck[Orientation::DOWN][0] = {0, 2};
-    tilesToCheck[Orientation::DOWN][1] = {1, 2};
+    neighbourTiles[Orientation::LEFT][0]  = {-1,  0};
+    neighbourTiles[Orientation::LEFT][1]  = {-1,  1};
+    neighbourTiles[Orientation::RIGHT][0] = { 2,  0};
+    neighbourTiles[Orientation::RIGHT][1] = { 2,  1};
+    neighbourTiles[Orientation::UP][0]    = { 0, -1};
+    neighbourTiles[Orientation::UP][1]    = { 1, -1};
+    neighbourTiles[Orientation::DOWN][0]  = { 0,  2};
+    neighbourTiles[Orientation::DOWN][1]  = { 1,  2};
 }
 
 void Pacman::close() {
@@ -55,149 +58,131 @@ void Pacman::close() {
     textureUnoriented = nullptr;
 }
 
-bool changeOrientation = true;
+bool Pacman::areTilesFree(Orientation orientation) {
+    for (int i = 0; i < NEIGHBOUR_TILES_COUNT; i++) {
+        Tile neighbourTile = neighbourTiles[orientation][i];
+        neighbourTile.x += xTile;
+        neighbourTile.y += yTile;
+        if (TilingManager::getInstance().getTilingAt(neighbourTile.x, neighbourTile.y)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 void Pacman::setDesiredOrientation(Orientation desiredOrientation) {
     this->desiredOrientation = desiredOrientation;
-    changeOrientation = true;
 }
 
 void Pacman::update(float deltaTime) {
     (void) deltaTime;
 
-    if (x % 16 == 0 && y % 16 == 0) {
-        if (orientation != desiredOrientation) {
-            changeOrientation = true;
-
-            for (int i = 0; i < 2; i++) {
-                int xt, yt;
-                xt = xStartTile + tilesToCheck[desiredOrientation][i].x;
-                yt = yStartTile + tilesToCheck[desiredOrientation][i].y;
-                if (TilingManager::getInstance().getTilingAt(xt, yt)) {
-                    changeOrientation = false;
-                    break;
-                }
-            }
-
-            if (changeOrientation) {
-                orientation = desiredOrientation;
-                // SDL_Delay(10000);
-            }
-        }
+    if (x % TILE_SIZE == 0 && y % TILE_SIZE == 0 && areTilesFree(desiredOrientation)) {
+        orientation = desiredOrientation;
+        moving = true;
     }
 
-    if (moving) {
-        int speed = 1;
-        switch (orientation) {
-            case Orientation::LEFT:
-                x -= speed;
-                break;
-            case Orientation::RIGHT:
-                x += speed;
-                break;
-            case Orientation::UP:
-                y -= speed;
-                break;
-            case Orientation::DOWN:
-                y += speed;
-                break;
-        }
+    moving = areTilesFree(orientation);
+
+    if (warping) updateWarping();
+    else if (moving) {
+        updateMoving();
+        warping = y == 208 && ((x == 0 && orientation == Orientation::LEFT) || (x == 400 && orientation == Orientation::RIGHT));
     }
-
-    x = std::min(std::max(0, x), GameConstants::WINDOW_WIDTH - PACMAN_W);
-    y = std::min(std::max(0, y), GameConstants::WINDOW_HEIGHT - PACMAN_H);
-
-    xStartTile = x / 16;
-    yStartTile = y / 16;
-
-    // if (orientation == Orientation::LEFT) xStartTile++;
-    // if (orientation == Orientation::UP) yStartTile++;
-
-    xEndTile = xStartTile;
-    yEndTile = yStartTile;
-
-    switch (orientation) {
-        case Orientation::LEFT:  xEndTile = xStartTile - 1; break;
-        case Orientation::RIGHT: xEndTile = xStartTile + 1; break;
-        case Orientation::UP:    yEndTile = yStartTile - 1; break;
-        case Orientation::DOWN:  yEndTile = yStartTile + 1; break;
-    }
-
-    // xEndTile = xStartTile;
-    // yEndTile = yStartTile;
-
-    // xEndTile = xEndTile > 0 ? xEndTile : 0;
-    // yEndTile = yEndTile > 0 ? yEndTile : 0;
 
     if (animationTimer->getTicks() > 100) {
         animationIndex = (animationIndex + 1) & 1;
         animationTimer->start();
     }
+
+    SDL_Delay(250);
+}
+
+void Pacman::updateMoving() {
+    switch (orientation) {
+        case Orientation::LEFT:
+            x -= PACMAN_SPEED;
+            break;
+        case Orientation::RIGHT:
+            x += PACMAN_SPEED;
+            break;
+        case Orientation::UP:
+            y -= PACMAN_SPEED;
+            break;
+        case Orientation::DOWN:
+            y += PACMAN_SPEED;
+            break;
+    }
+
+    x = std::min(std::max(0, x), GameConstants::WINDOW_WIDTH - PACMAN_TEXTURE_W);
+    y = std::min(std::max(0, y), GameConstants::WINDOW_HEIGHT - PACMAN_TEXTURE_H);
+            
+    if (x % TILE_SIZE == 0 && y % TILE_SIZE == 0) {
+        xTile = x / TILE_SIZE;
+        yTile = y / TILE_SIZE;
+    }
+}
+
+void Pacman::updateWarping() {
+    if (orientation == Orientation::LEFT) {
+        x -= PACMAN_SPEED;
+
+        if (x <= -PACMAN_TEXTURE_W) {
+            x = GameConstants::WINDOW_WIDTH + 3 * PACMAN_TEXTURE_W;
+        } else if (x == GameConstants::WINDOW_WIDTH - PACMAN_TEXTURE_W) {
+            warping = false;
+        }
+    } else if (orientation == Orientation::RIGHT) {
+        x += PACMAN_SPEED;
+
+        if (x >= GameConstants::WINDOW_WIDTH) {
+            x = -PACMAN_TEXTURE_W;
+        } else if (x <= 0) {
+            warping = false;
+        }
+    }
 }
 
 void Pacman::render() {
-    // std::string textX = "TILE X: " + std::to_string(x / 16) + " X: " + std::to_string(x);
-    // std::string textY = "TILE Y: " + std::to_string(y / 16) + " Y: " + std::to_string(y);
+    std::string textX = "TILE X: " + std::to_string(x / TILE_SIZE) + " X: " + std::to_string(x);
+    std::string textY = "TILE Y: " + std::to_string(y / TILE_SIZE) + " Y: " + std::to_string(y);
+    std::string warpingText = "WARPING";
 
-    // SDL_Color colorCoordNotOnTile = { 255, 255, 0, 255 };
-    // SDL_Color colorCoordOnTile = { 0, 255, 0, 255 };
+    SDL_Color onTileColor = { 255, 255, 0, 255 };
+    SDL_Color notOnTileColor = { 0, 255, 0, 255 };
+    SDL_Color warpingColor = { 255, 0, 0, 255 };
 
-    // SDL_Surface *textXSurface = TTF_RenderText_Solid(jetbrainsMono, textX.c_str(), x % 16 == 0 ? colorCoordOnTile : colorCoordNotOnTile);
-    // SDL_Texture *textXTexture = SDL_CreateTextureFromSurface(renderer, textXSurface);
+    SDL_Surface *textXSurface = TTF_RenderText_Solid(jetbrainsMono, textX.c_str(), x % TILE_SIZE == 0 ? notOnTileColor : onTileColor);
+    SDL_Texture *textXTexture = SDL_CreateTextureFromSurface(renderer, textXSurface);
 
-    // SDL_Surface *textYSurface = TTF_RenderText_Solid(jetbrainsMono, textY.c_str(), y % 16 == 0 ? colorCoordOnTile : colorCoordNotOnTile);
-    // SDL_Texture *textYTexture = SDL_CreateTextureFromSurface(renderer, textYSurface);
+    SDL_Surface *textYSurface = TTF_RenderText_Solid(jetbrainsMono, textY.c_str(), y % TILE_SIZE == 0 ? notOnTileColor : onTileColor);
+    SDL_Texture *textYTexture = SDL_CreateTextureFromSurface(renderer, textYSurface);
 
-    // SDL_Rect textXRect = { 0, 0, textXSurface->w, textXSurface->h };
-    // SDL_Rect textYRect = { 0, 16, textYSurface->w, textYSurface->h };
+    SDL_Surface *warpingSurface = TTF_RenderText_Solid(jetbrainsMono, warpingText.c_str(), warpingColor);
+    SDL_Texture *warpingTexture = SDL_CreateTextureFromSurface(renderer, warpingSurface);
 
-    // SDL_RenderCopy(renderer, textXTexture, NULL, &textXRect);
-    // SDL_RenderCopy(renderer, textYTexture, NULL, &textYRect);
+    SDL_Rect textXRect = { 0, 0,         textXSurface->w, textXSurface->h };
+    SDL_Rect textYRect = { 0, TILE_SIZE, textYSurface->w, textYSurface->h };
+    SDL_Rect warpingRect = { 0, 2 * TILE_SIZE, warpingSurface->w, warpingSurface->h };
 
-    // SDL_FreeSurface(textXSurface);
-    // SDL_FreeSurface(textYSurface);
-    // SDL_DestroyTexture(textXTexture);
-    // SDL_DestroyTexture(textYTexture);
+    SDL_RenderCopy(renderer, textXTexture, NULL, &textXRect);
+    SDL_RenderCopy(renderer, textYTexture, NULL, &textYRect);
+    if (warping) SDL_RenderCopy(renderer, warpingTexture, NULL, &warpingRect);
+
+    SDL_FreeSurface(textXSurface);
+    SDL_FreeSurface(textYSurface);
+    SDL_FreeSurface(warpingSurface);
+    SDL_DestroyTexture(textXTexture);
+    SDL_DestroyTexture(textYTexture);
+    SDL_DestroyTexture(warpingTexture);
    
-    SDL_Rect textureRect = { x, y, PACMAN_W, PACMAN_H };
+    SDL_Rect textureRect = { x, y, PACMAN_TEXTURE_W, PACMAN_TEXTURE_H };
     SDL_Texture *toDraw = animationIndex ? textureUnoriented : textureOriented;
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-    SDL_RenderDrawRect(renderer, &textureRect);
-    SDL_RenderCopyEx(renderer, toDraw, NULL, &textureRect, rotationFromOrientation(orientation), NULL, SDL_FLIP_NONE);
-
-    SDL_Rect rect = { x, y, 16, 16 };
-    SDL_SetRenderDrawColor(renderer, 255, 51, 51, 255);
-    SDL_RenderFillRect(renderer, &rect);
-
-    rect = { xStartTile * 16, yStartTile * 16, 16, 16 };
-    SDL_SetRenderDrawColor(renderer, 127, 51, 51, 255);
-    SDL_RenderDrawRect(renderer, &rect);
-
-    rect = { xEndTile * 16, yEndTile * 16, 16, 16 };
-    SDL_SetRenderDrawColor(renderer, 51, 255, 51, 255);
-    SDL_RenderDrawRect(renderer, &rect);
-
-    for (int i = 0; i < 2; i++) {
-        SDL_Rect tileRect = {
-            (xStartTile + tilesToCheck[desiredOrientation][i].x) * 16,
-            (yStartTile + tilesToCheck[desiredOrientation][i].y) * 16,
-            16,
-            16
-        };
-
-        SDL_SetRenderDrawColor(renderer, 51, 51, 255, 255);
-        SDL_RenderDrawRect(renderer, &tileRect);
-    }
-
-    // SDL_Rect r3 = { tilesToCheck[0].x * 16, tilesToCheck[0].y * 16, 16, 16 };
-    // SDL_Rect r4 = { tilesToCheck[1].x * 16, tilesToCheck[1].y * 16, 16, 16 };
-    // SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-    // SDL_RenderDrawRect(renderer, &r3);
-    // SDL_RenderDrawRect(renderer, &r4);
+    SDL_RenderCopyEx(renderer, toDraw, NULL, &textureRect, textureRotationFromOrientation(orientation), NULL, SDL_FLIP_NONE);
 }
 
-int Pacman::rotationFromOrientation(Orientation orientation) {
+int Pacman::textureRotationFromOrientation(Orientation orientation) {
     switch (orientation) {
         case Orientation::LEFT:  return 180;
         case Orientation::RIGHT: return 0;

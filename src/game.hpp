@@ -31,6 +31,6 @@ private:
 
     std::unique_ptr<Timer> frameTimer;
 
-    void renderBackgroundTiling();
+    void renderBackground();
     void renderTiling();
 };

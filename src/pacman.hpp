@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <SDL2/SDL.h>
 
@@ -11,6 +12,8 @@ class Pacman {
 public:
     Pacman(SDL_Renderer *renderer);
     void close();
+    
+    enum class State { MOVING, WARPING, IDLE };
 
     enum Orientation {
         LEFT = 0,
@@ -29,12 +32,23 @@ private:
     SDL_Texture *textureOriented;
     SDL_Texture *textureUnoriented;
 
+    static const int PACMAN_TEXTURE_W = 32;
+    static const int PACMAN_TEXTURE_H = 32;
+    static const int PACMAN_SPEED = 2;
+
+    State state;
     Orientation orientation, desiredOrientation;
-    int x, y, xStartTile, yStartTile, xEndTile, yEndTile;
-    bool moving;
+    int x, y, xTile, yTile, xEndTile, yEndTile;
+    bool moving, warping;
+
+    static const int NEIGHBOUR_TILES_COUNT = 2;
+    std::array<std::array<Tile, NEIGHBOUR_TILES_COUNT>, 4> neighbourTiles;
 
     std::unique_ptr<Timer> animationTimer;
     int animationIndex;
 
-    int rotationFromOrientation(Orientation orientation);
+    bool areTilesFree(Orientation orientation);
+    int textureRotationFromOrientation(Orientation orientation);
+    void updateMoving();
+    void updateWarping();
 };

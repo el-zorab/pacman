@@ -107,10 +107,7 @@ void Game::update() {
 }
 
 void Game::render() {
-    SDL_SetRenderDrawColor(renderer, 31, 31, 127, 255);
-    SDL_RenderClear(renderer);
-
-    renderBackgroundTiling();
+    renderBackground();
     renderTiling();
 
     pacman->render();
@@ -118,7 +115,7 @@ void Game::render() {
     SDL_RenderPresent(renderer);
 }
 
-void Game::renderBackgroundTiling() {
+void Game::renderBackground() {
     SDL_Color BG_TILE_COLOR_A = { 0, 0, 0, 255 };
     SDL_Color BG_TILE_COLOR_B = { 25, 25, 25, 255 };
     
@@ -140,11 +137,6 @@ void Game::renderBackgroundTiling() {
 
 void Game::renderTiling() {
     SDL_SetRenderDrawColor(renderer, 127, 127, 127, 255);
-
-    SDL_RenderDrawLine(renderer,
-        GameConstants::WINDOW_WIDTH / 2, 0,
-        GameConstants::WINDOW_WIDTH / 2, GameConstants::WINDOW_HEIGHT);
-
     for (int i = 0; i < GameConstants::TILE_COLS; i++) {
         for (int j = 0; j < GameConstants::TILE_ROWS; j++) {
             if (!TilingManager::getInstance().getTilingAt(i, j)) continue;
