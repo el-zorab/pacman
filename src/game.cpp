@@ -122,7 +122,7 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    float deltaTime = frameTimer->getTicks() / 1000.f;
+    float deltaTime = std::min(frameTimer->getTicks() / 1000.f, 1.f / 60);
     frameTimer->start();
 
     pacman->update(deltaTime);

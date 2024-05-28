@@ -21,9 +21,9 @@ Pacman::Pacman(SDL_Renderer *renderer) {
     textureUnoriented = Game::getInstance().getTextureManager().loadTexture(renderer, PACMAN_TEXTURE_UNORIENTED_PATH);
 
     pos.x = pos.y = TILE_SIZE;
-    tilePos.x = pos.x / TILE_SIZE;
-    tilePos.y = pos.y / TILE_SIZE;
-    orientation = Orientation::RIGHT;
+    tilePos.x = 1;
+    tilePos.y = 1;
+    orientation = desiredOrientation = Orientation::RIGHT;
 
     animationIndex = 0;
     animationTimer = std::make_unique<Timer>();
@@ -31,39 +31,29 @@ Pacman::Pacman(SDL_Renderer *renderer) {
 }
 
 void Pacman::update(float deltaTime) {
-    (void) deltaTime;
-
     Entity2D vec = orientationVec(orientation);
-    Entity2D tileNewPos = { tilePos.x + vec.x, tilePos.y + vec.y };
 
-    if (Game::getInstance().getTilingManager().isTileFree(tileNewPos.x, tileNewPos.y)) {
-        SDL_Log("yes");
-        pos.x += vec.x * SPEED;
-        pos.y += vec.y * SPEED;
-    }
-
-    Entity2D posMax = {
-        GameConstants::WINDOW_WIDTH - TEXTURE_W,
-        GameConstants::WINDOW_HEIGHT - TEXTURE_H
+    if (Game::getInstance().getTilingManager().isTileFree(tilePos.x + vec.x, tilePos.y + vec.y)) {
+        pos.x += vec.x * VELOCITY * deltaTime;
+        pos.y += vec.y * VELOCITY * deltaTime;
     };
+    
+    if ((std::fmod(pos.x, TILE_SIZE) < 1.0 && std::fmod(pos.y, TILE_SIZE) < 1.0)
+        || std::abs(pos.x - tilePos.x * TILE_SIZE) > TILE_SIZE || std::abs(pos.y - tilePos.y * TILE_SIZE) > TILE_SIZE) {
+        tilePos.x = std::floor(pos.x / TILE_SIZE);
+        tilePos.y = std::floor(pos.y / TILE_SIZE);
 
-    if (pos.x <= 0) pos.x = 0;
-    if (pos.y <= 0) pos.y = 0;
-    if (pos.x >= posMax.x) pos.x = posMax.x;
-    if (pos.y >= posMax.y) pos.y = posMax.y;
-
-    if (pos.x % TILE_SIZE == 0 && pos.y % TILE_SIZE == 0) {
-        tilePos.x = pos.x / TILE_SIZE;
-        tilePos.y = pos.y / TILE_SIZE;
+        pos.x = std::floor(pos.x / TILE_SIZE) * TILE_SIZE;
+        pos.y = std::floor(pos.y / TILE_SIZE) * TILE_SIZE;
 
         if (orientation != desiredOrientation) {
-            Entity2D desiredOrientationVec = orientationVec(desiredOrientation);
-            Entity2D tileNewPos = {
-                tilePos.x + desiredOrientationVec.x,
-                tilePos.y + desiredOrientationVec.y
+            Entity2D desiredVec = orientationVec(desiredOrientation);
+            Entity2D tilePosDesired = {
+                tilePos.x + desiredVec.x,
+                tilePos.y + desiredVec.y
             };
 
-            if (Game::getInstance().getTilingManager().isTileFree(tileNewPos.x, tileNewPos.y)) { // == FREE
+            if (Game::getInstance().getTilingManager().isTileFree(tilePosDesired.x, tilePosDesired.y)) { // == FREE
                 orientation = desiredOrientation;
             }
         }
@@ -84,8 +74,8 @@ void Pacman::render() {
     Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(pos.x), 0, 0,         textColor);
     Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(pos.y), 0, TILE_SIZE, textColor);
 
-    if (pos.x % TILE_SIZE == 0 && pos.y % TILE_SIZE == 0) {
-        Game::getInstance().getFontRenderer().renderText(renderer, "ON TILE", 0, 2 * TILE_SIZE, SDL_Color {0, 255, 0, 255});
+    if (std::fmod(pos.x, TILE_SIZE) < 1.0 || std::fmod(pos.y, TILE_SIZE) < 1.0) {
+        Game::getInstance().getFontRenderer().renderText(renderer, "ALIGNED", 0, 2 * TILE_SIZE, SDL_Color {0, 255, 0, 255});
     }
 
     SDL_Rect tilePosRect = { tilePos.x * TILE_SIZE, tilePos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
@@ -97,7 +87,7 @@ void Pacman::render() {
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     SDL_RenderDrawRect(renderer, &tileNewPosRect);
 
-    SDL_Rect textureRect = { pos.x, pos.y, TEXTURE_W, TEXTURE_H };
+    SDL_Rect textureRect = { (int) pos.x, (int) pos.y, TEXTURE_W, TEXTURE_H };
     SDL_Texture *toDraw = animationIndex ? textureUnoriented : textureOriented;
 
     SDL_RenderCopyEx(renderer, toDraw, NULL, &textureRect, orientationRotationDeg(orientation), NULL, SDL_FLIP_NONE);

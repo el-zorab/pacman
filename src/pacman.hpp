@@ -25,9 +25,10 @@ private:
 
     const int TEXTURE_W = GameConstants::TILE_SIZE;
     const int TEXTURE_H = GameConstants::TILE_SIZE;
-    const int SPEED = 4;
+    const int VELOCITY = 30 * GameConstants::TILE_SIZE;
 
-    Entity2D pos, tilePos;
+    Entity2DF pos;
+    Entity2D tilePos;
     Orientation orientation, desiredOrientation;
 
     const Uint32 ANIMATION_FRAME_DURATION_MS = 100;
