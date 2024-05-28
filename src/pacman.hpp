@@ -4,7 +4,7 @@
 #include <memory>
 #include <SDL2/SDL.h>
 
-#include "gameConstants.hpp"
+#include "game.hpp"
 #include "orientation.hpp"
 #include "timer.hpp"
 
@@ -15,7 +15,7 @@ public:
 
     void setDesiredOrientation(Orientation desiredOrientation);
 
-    void update(float deltaTime);
+    void update();
     void render();
 
 private:
@@ -23,12 +23,10 @@ private:
     SDL_Texture *textureOriented;
     SDL_Texture *textureUnoriented;
 
-    const int TEXTURE_W = GameConstants::TILE_SIZE;
-    const int TEXTURE_H = GameConstants::TILE_SIZE;
-    const int VELOCITY = 30 * GameConstants::TILE_SIZE;
+    const int TEXTURE_W = Game::TILE_SIZE;
+    const int TEXTURE_H = Game::TILE_SIZE;
 
-    Entity2DF pos;
-    Entity2D tilePos;
+    Entity2D pos, tilePos;
     Orientation orientation, desiredOrientation;
 
     const Uint32 ANIMATION_FRAME_DURATION_MS = 100;

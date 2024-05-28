@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "gameConstants.hpp"
+#include "game.hpp"
 
 class TilingManager {
 
@@ -13,6 +13,6 @@ public:
     int isTileFree(int x, int y);
 
 private:
-    std::array<std::array<bool, GameConstants::TILE_ROWS>, GameConstants::TILE_COLS> tiling;
+    std::array<std::array<bool, Game::TILE_ROWS>, Game::TILE_COLS> tiling;
 
 };
