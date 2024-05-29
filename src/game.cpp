@@ -15,7 +15,7 @@ Game &Game::getInstance() {
 }
 
 void Game::init(std::string title, int x, int y) {
-    window = SDL_CreateWindow(title.c_str(), x, y, WINDOW_BORDERED_WIDTH, WINDOW_BORDERED_HEIGHT, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow(title.c_str(), x, y, GameConst::WINDOW_BORDERED_WIDTH, GameConst::WINDOW_BORDERED_HEIGHT, SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         printf("SDL_CreateWindow error: %s\n", SDL_GetError());
         exit(-1);
@@ -38,17 +38,18 @@ void Game::init(std::string title, int x, int y) {
         exit(-1);
     }
 
-    SDL_Rect rendererViewport = { BORDER_SIZE, BORDER_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT };
+    SDL_Rect rendererViewport = { GameConst::BORDER_SIZE, GameConst::BORDER_SIZE, GameConst::WINDOW_WIDTH, GameConst::WINDOW_HEIGHT };
     SDL_RenderSetViewport(renderer, &rendererViewport);
 
     gameRunning = true;
     
-    fontRenderer = std::make_unique<FontRenderer>("jetbrains_mono_regular.ttf", TILE_SIZE);
+    fontRenderer = std::make_unique<FontRenderer>("jetbrains_mono_regular.ttf", GameConst::TILE_SIZE);
     textureManager = std::make_unique<TextureManager>();
     tilingManager = std::make_unique<TilingManager>();
     tilingManager->loadTiling();
 
     pacman = std::make_unique<Pacman>(renderer);
+    blinky = std::make_unique<Blinky>(renderer);
 
     frameAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -123,11 +124,12 @@ void Game::update() {
 
     frameAccumulator += frameTime;
 
-    const int SIMULATION_FRAMERATE = 8 * TILE_SIZE;
+    const int SIMULATION_FRAMERATE = 8 * GameConst::TILE_SIZE;
     const double dt = 1.f / SIMULATION_FRAMERATE;
 
     while (frameAccumulator >= dt) {        
         pacman->update();
+        blinky->update(pacman->getTilePosition()); // call in update, with no params
 
         frameAccumulator -= dt;
     }
@@ -138,6 +140,7 @@ void Game::render() {
     renderMap();
 
     pacman->render();
+    blinky->render();
 
     SDL_RenderPresent(renderer);
 }
@@ -146,13 +149,13 @@ void Game::renderBackground() {
     SDL_Color BG_TILE_COLOR_A = { 0, 0, 0, 255 };
     SDL_Color BG_TILE_COLOR_B = { 25, 25, 25, 255 };
     
-    for (int i = 0; i < TILE_COLS; i++) {
-        for (int j = 0; j < TILE_ROWS; j++) {
+    for (int i = 0; i < GameConst::TILE_COLS; i++) {
+        for (int j = 0; j < GameConst::TILE_ROWS; j++) {
             SDL_Rect tileRect = {
-                TILE_SIZE * i,
-                TILE_SIZE * j,
-                TILE_SIZE,
-                TILE_SIZE
+                GameConst::TILE_SIZE * i,
+                GameConst::TILE_SIZE * j,
+                GameConst::TILE_SIZE,
+                GameConst::TILE_SIZE
             };
 
             SDL_Color color = (i + j) % 2 == 0 ? BG_TILE_COLOR_A : BG_TILE_COLOR_B;
@@ -166,15 +169,15 @@ void Game::renderMap() {
     static const int OFFSET = 1;
 
     SDL_SetRenderDrawColor(renderer, 52, 110, 235, 255);
-    for (int i = 0; i < TILE_COLS; i++) {
-        for (int j = 0; j < TILE_ROWS; j++) {
+    for (int i = 0; i < GameConst::TILE_COLS; i++) {
+        for (int j = 0; j < GameConst::TILE_ROWS; j++) {
             if (tilingManager->isTileFree(i, j)) continue;
 
             SDL_Rect tileRect = {
-                TILE_SIZE * i + OFFSET,
-                TILE_SIZE * j + OFFSET,
-                TILE_SIZE - 2 * OFFSET,
-                TILE_SIZE - 2 * OFFSET
+                GameConst::TILE_SIZE * i + OFFSET,
+                GameConst::TILE_SIZE * j + OFFSET,
+                GameConst::TILE_SIZE - 2 * OFFSET,
+                GameConst::TILE_SIZE - 2 * OFFSET
             };
 
             SDL_RenderFillRect(renderer, &tileRect);

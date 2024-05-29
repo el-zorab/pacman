@@ -8,6 +8,8 @@
 #include "textureManager.hpp"
 #include "tilingManager.hpp"
 
+using GameConst::TILE_SIZE;
+
 const std::string PACMAN_TEXTURE_ORIENTED_PATH   = "pacman_oriented.png";
 const std::string PACMAN_TEXTURE_UNORIENTED_PATH = "pacman_unoriented.png";
 
@@ -17,7 +19,7 @@ Pacman::Pacman(SDL_Renderer *renderer) {
     textureOriented = Game::getInstance().getTextureManager().loadTexture(renderer, PACMAN_TEXTURE_ORIENTED_PATH);
     textureUnoriented = Game::getInstance().getTextureManager().loadTexture(renderer, PACMAN_TEXTURE_UNORIENTED_PATH);
 
-    pos.x = pos.y = Game::TILE_SIZE;
+    pos.x = pos.y = TILE_SIZE;
     tilePos.x = 1;
     tilePos.y = 1;
     orientation = desiredOrientation = Orientation::RIGHT;
@@ -31,7 +33,7 @@ void Pacman::update() {
     Entity2D vec = orientationVec(orientation);
     Entity2D vecDesired = orientationVec(desiredOrientation);
 
-    Entity2D tilePosNext = {
+    tilePosNext = {
         tilePos.x + vec.x,
         tilePos.y + vec.y
     };
@@ -41,13 +43,13 @@ void Pacman::update() {
         pos.y += vec.y;
     };
 
-    if (pos.x % Game::TILE_SIZE == 0 && pos.y % Game::TILE_SIZE == 0) {
-        tilePos.x = std::floor(pos.x / Game::TILE_SIZE);
-        tilePos.y = std::floor(pos.y / Game::TILE_SIZE);
+    if (pos.x % TILE_SIZE == 0 && pos.y % TILE_SIZE == 0) {
+        tilePos.x = std::floor(pos.x / TILE_SIZE);
+        tilePos.y = std::floor(pos.y / TILE_SIZE);
 
-        if ((tilePos.x <= 0 || tilePos.x >= Game::TILE_COLS) && tilePos.y == 14) { // warping
+        if ((tilePos.x <= 0 || tilePos.x >= GameConst::TILE_COLS) && tilePos.y == 14) { // warping
             const int xWarpingMin = -TEXTURE_W;
-            const int xWarpingMax = Game::WINDOW_WIDTH;
+            const int xWarpingMax = GameConst::WINDOW_WIDTH;
 
             if (pos.x == xWarpingMin) {
                 pos.x = xWarpingMax;
@@ -75,26 +77,31 @@ void Pacman::update() {
     }
 }
 
-void Pacman::setDesiredOrientation(Orientation desiredOrientation) {
-    this->desiredOrientation = desiredOrientation;
-};
-
 void Pacman::render() {
     SDL_Color textColor = { 255, 255, 255, 255 };
-    Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(pos.x), 0, 0,               textColor);
-    Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(pos.y), 0, Game::TILE_SIZE, textColor);
+    Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(pos.x), 0, 0,         textColor);
+    Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(pos.y), 0, TILE_SIZE, textColor);
 
-    SDL_Rect tilePosRect = { tilePos.x * Game::TILE_SIZE, tilePos.y * Game::TILE_SIZE, Game::TILE_SIZE, Game::TILE_SIZE };
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderDrawRect(renderer, &tilePosRect);
+    // SDL_Rect tilePosRect = { tilePos.x * TILE_SIZE, tilePos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    // SDL_RenderDrawRect(renderer, &tilePosRect);
 
-    Entity2D vec = orientationVec(orientation);
-    SDL_Rect tileNewPosRect = { (tilePos.x + vec.x) * Game::TILE_SIZE, (tilePos.y + vec.y) * Game::TILE_SIZE, Game::TILE_SIZE, Game::TILE_SIZE };
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-    SDL_RenderDrawRect(renderer, &tileNewPosRect);
+    // Entity2D vec = orientationVec(orientation);
+    // SDL_Rect tileNewPosRect = { (tilePos.x + vec.x) * TILE_SIZE, (tilePos.y + vec.y) * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    // SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    // SDL_RenderDrawRect(renderer, &tileNewPosRect);
 
     SDL_Rect textureRect = { (int) pos.x, (int) pos.y, TEXTURE_W, TEXTURE_H };
     SDL_Texture *toDraw = animationIndex ? textureUnoriented : textureOriented;
 
     SDL_RenderCopyEx(renderer, toDraw, NULL, &textureRect, orientationRotationDeg(orientation), NULL, SDL_FLIP_NONE);
 }
+
+Entity2D Pacman::getTilePosition() {
+    return tilePosNext;
+}
+
+void Pacman::setDesiredOrientation(Orientation desiredOrientation) {
+    this->desiredOrientation = desiredOrientation;
+};
+

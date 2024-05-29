@@ -4,7 +4,8 @@
 #include <memory>
 #include <SDL2/SDL.h>
 
-#include "game.hpp"
+#include "entity2d.hpp"
+#include "gameConst.hpp"
 #include "orientation.hpp"
 #include "timer.hpp"
 
@@ -13,20 +14,21 @@ class Pacman {
 public:
     Pacman(SDL_Renderer *renderer);
 
-    void setDesiredOrientation(Orientation desiredOrientation);
-
     void update();
     void render();
+
+    Entity2D getTilePosition();
+    void setDesiredOrientation(Orientation desiredOrientation);
 
 private:
     SDL_Renderer *renderer;
     SDL_Texture *textureOriented;
     SDL_Texture *textureUnoriented;
 
-    const int TEXTURE_W = Game::TILE_SIZE;
-    const int TEXTURE_H = Game::TILE_SIZE;
+    const int TEXTURE_W = GameConst::TILE_SIZE;
+    const int TEXTURE_H = GameConst::TILE_SIZE;
 
-    Entity2D pos, tilePos;
+    Entity2D pos, tilePos, tilePosNext;
     Orientation orientation, desiredOrientation;
 
     const Uint32 ANIMATION_FRAME_DURATION_MS = 100;
