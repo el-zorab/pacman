@@ -19,9 +19,10 @@ Pacman::Pacman(SDL_Renderer *renderer) {
     textureOriented = Game::getInstance().getTextureManager().loadTexture(renderer, PACMAN_TEXTURE_ORIENTED_PATH);
     textureUnoriented = Game::getInstance().getTextureManager().loadTexture(renderer, PACMAN_TEXTURE_UNORIENTED_PATH);
 
-    pos.x = pos.y = TILE_SIZE;
-    tilePos.x = 1;
-    tilePos.y = 1;
+    tilePos.x = 3;
+    tilePos.y = 14;
+    pos.x = tilePos.x * TILE_SIZE;
+    pos.y = tilePos.y * TILE_SIZE;
     orientation = desiredOrientation = Orientation::RIGHT;
 
     animationIndex = 0;
@@ -30,8 +31,8 @@ Pacman::Pacman(SDL_Renderer *renderer) {
 }
 
 void Pacman::update() {
-    Entity2D vec = orientationVec(orientation);
-    Entity2D vecDesired = orientationVec(desiredOrientation);
+    Entity2D vec = orientationToVector(orientation);
+    Entity2D vecDesired = orientationToVector(desiredOrientation);
 
     tilePosNext = {
         tilePos.x + vec.x,
@@ -44,8 +45,8 @@ void Pacman::update() {
     };
 
     if (pos.x % TILE_SIZE == 0 && pos.y % TILE_SIZE == 0) {
-        tilePos.x = std::floor(pos.x / TILE_SIZE);
-        tilePos.y = std::floor(pos.y / TILE_SIZE);
+        tilePos.x = pos.x / TILE_SIZE;
+        tilePos.y = pos.y / TILE_SIZE;
 
         if ((tilePos.x <= 0 || tilePos.x >= GameConst::TILE_COLS) && tilePos.y == 14) { // warping
             const int xWarpingMin = -TEXTURE_W;
@@ -86,19 +87,22 @@ void Pacman::render() {
     // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     // SDL_RenderDrawRect(renderer, &tilePosRect);
 
-    // Entity2D vec = orientationVec(orientation);
+    // Entity2D vec = orientationToVector(orientation);
     // SDL_Rect tileNewPosRect = { (tilePos.x + vec.x) * TILE_SIZE, (tilePos.y + vec.y) * TILE_SIZE, TILE_SIZE, TILE_SIZE };
     // SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     // SDL_RenderDrawRect(renderer, &tileNewPosRect);
 
-    SDL_Rect textureRect = { (int) pos.x, (int) pos.y, TEXTURE_W, TEXTURE_H };
-    SDL_Texture *toDraw = animationIndex ? textureUnoriented : textureOriented;
+    SDL_Rect pacmanRect = { pos.x, pos.y, TEXTURE_W, TEXTURE_H };
+    SDL_Texture *texture = animationIndex ? textureUnoriented : textureOriented;
 
-    SDL_RenderCopyEx(renderer, toDraw, NULL, &textureRect, orientationRotationDeg(orientation), NULL, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(renderer, texture, nullptr, &pacmanRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
 }
 
-Entity2D Pacman::getTilePosition() {
-    return tilePosNext;
+Entity2D Pacman::getPacmanTargetTile() {
+    Entity2D targetTile = tilePosNext;
+    if (targetTile.x < 0) targetTile.x = 0;
+    if (targetTile.x > GameConst::WINDOW_WIDTH - TILE_SIZE) targetTile.x = GameConst::WINDOW_WIDTH - TILE_SIZE;
+    return targetTile;
 }
 
 void Pacman::setDesiredOrientation(Orientation desiredOrientation) {

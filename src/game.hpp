@@ -29,6 +29,8 @@ public:
     TextureManager &getTextureManager();
     TilingManager &getTilingManager();
 
+    Pacman &getPacman();
+
     void handleEvents();
     void update();
     void render();

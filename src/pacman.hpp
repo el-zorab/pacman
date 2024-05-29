@@ -17,7 +17,7 @@ public:
     void update();
     void render();
 
-    Entity2D getTilePosition();
+    Entity2D getPacmanTargetTile();
     void setDesiredOrientation(Orientation desiredOrientation);
 
 private:

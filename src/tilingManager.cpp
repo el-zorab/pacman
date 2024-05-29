@@ -22,6 +22,8 @@ void TilingManager::loadTiling() {
 }
 
 int TilingManager::isTileFree(int x, int y) {
-    if (x < 0 || y < 0 || x >= GameConst::TILE_COLS || y >= GameConst::TILE_ROWS) return true;
+    if (x < 0 || y < 0 || x >= GameConst::TILE_COLS || y >= GameConst::TILE_ROWS) {
+        return (x < 0 || x >= GameConst::TILE_COLS) && y == 14;
+    };
     return !tiling[x][y];
 }

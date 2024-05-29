@@ -90,6 +90,10 @@ TilingManager &Game::getTilingManager() {
     return *tilingManager;
 }
 
+Pacman &Game::getPacman() {
+    return *pacman;
+}
+
 void Game::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -119,20 +123,22 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    float frameTime = std::min(frameTimer->getTicks() / 1000.f, 1.f / 4);
-    frameTimer->start();
+    // float frameTime = std::min(frameTimer->getTicks() / 1000.f, 1.f / 4);
+    // frameTimer->start();
 
-    frameAccumulator += frameTime;
+    // frameAccumulator += frameTime;
 
-    const int SIMULATION_FRAMERATE = 8 * GameConst::TILE_SIZE;
-    const double dt = 1.f / SIMULATION_FRAMERATE;
+    // const int SIMULATION_FRAMERATE = 8 * GameConst::TILE_SIZE;
+    // const double dt = 1.f / SIMULATION_FRAMERATE;
 
-    while (frameAccumulator >= dt) {        
+    // while (frameAccumulator >= dt) {        
         pacman->update();
-        blinky->update(pacman->getTilePosition()); // call in update, with no params
+        blinky->update();
 
-        frameAccumulator -= dt;
-    }
+    //     frameAccumulator -= dt;
+    // }
+
+    SDL_Delay(5);
 }
 
 void Game::render() {
