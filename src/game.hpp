@@ -25,6 +25,8 @@ public:
     bool isGameRunning();
     void stopRunning();
 
+    SDL_Renderer *getRenderer();
+
     FontRenderer &getFontRenderer();
     TextureManager &getTextureManager();
     TilingManager &getTilingManager();

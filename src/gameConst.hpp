@@ -3,7 +3,7 @@
 namespace GameConst {
     static const int TILE_ROWS = 31;
     static const int TILE_COLS = 28;
-    static const int TILE_SIZE = 24;
+    static const int TILE_SIZE = 16;
 
     static const int BORDER_SIZE = 32;
 

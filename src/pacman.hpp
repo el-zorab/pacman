@@ -12,12 +12,13 @@
 class Pacman {
 
 public:
-    Pacman(SDL_Renderer *renderer);
+    Pacman();
 
     void update();
     void render();
 
-    Entity2D getPacmanTargetTile();
+    Entity2D getTargetTile();
+    Orientation getOrientation();
     void setDesiredOrientation(Orientation desiredOrientation);
 
 private:

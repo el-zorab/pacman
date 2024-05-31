@@ -48,8 +48,8 @@ void Game::init(std::string title, int x, int y) {
     tilingManager = std::make_unique<TilingManager>();
     tilingManager->loadTiling();
 
-    pacman = std::make_unique<Pacman>(renderer);
-    blinky = std::make_unique<Blinky>(renderer);
+    pacman = std::make_unique<Pacman>();
+    blinky = std::make_unique<Blinky>();
 
     frameAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -77,6 +77,10 @@ bool Game::isGameRunning() {
 void Game::stopRunning() {
     gameRunning = false;
 }
+
+SDL_Renderer *Game::getRenderer() {
+    return renderer;
+};
 
 FontRenderer &Game::getFontRenderer() {
     return *fontRenderer;
@@ -123,22 +127,22 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    // float frameTime = std::min(frameTimer->getTicks() / 1000.f, 1.f / 4);
-    // frameTimer->start();
+    float frameTime = std::min(frameTimer->getTicks() / 1000.f, 1.f / 4);
+    frameTimer->start();
 
-    // frameAccumulator += frameTime;
+    frameAccumulator += frameTime;
 
-    // const int SIMULATION_FRAMERATE = 8 * GameConst::TILE_SIZE;
-    // const double dt = 1.f / SIMULATION_FRAMERATE;
+    const int SIMULATION_FRAMERATE = 8 * GameConst::TILE_SIZE;
+    const double dt = 1.f / SIMULATION_FRAMERATE;
 
-    // while (frameAccumulator >= dt) {        
+    while (frameAccumulator >= dt) {        
         pacman->update();
         blinky->update();
 
-    //     frameAccumulator -= dt;
-    // }
+        frameAccumulator -= dt;
+    }
 
-    SDL_Delay(5);
+    // SDL_Delay(50);
 }
 
 void Game::render() {

@@ -9,7 +9,7 @@ CC_FLAGS := -Wall -Wextra -pedantic -MMD
 LD_FLAGS := -lSDL2 -lSDL2main -lSDL2_image -lSDL2_ttf
 
 WIN_SDL_LIB := C:\sdl2-dev
-WIN := no
+WIN := yes
 
 ifeq ($(WIN),yes)
 	LD_FLAGS := -I$(WIN_SDL_LIB)\include -L$(WIN_SDL_LIB)\lib $(LD_FLAGS)
