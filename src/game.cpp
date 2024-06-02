@@ -127,22 +127,21 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    float frameTime = std::min(frameTimer->getTicks() / 1000.f, 1.f / 4);
+    float frameTime = frameTimer->getTicks();
     frameTimer->start();
 
     frameAccumulator += frameTime;
 
-    const int SIMULATION_FRAMERATE = 8 * GameConst::TILE_SIZE;
-    const double dt = 1.f / SIMULATION_FRAMERATE;
+    const int SIMULATION_FRAMERATE = 60;
+    const double dt = 1000.f / SIMULATION_FRAMERATE;
+    const double dt_floored = std::floor(dt);
 
-    while (frameAccumulator >= dt) {        
-        pacman->update();
-        blinky->update();
+    while (frameAccumulator >= dt_floored) {        
+        pacman->update(dt_floored);
+        // blinky->update();
 
-        frameAccumulator -= dt;
+        frameAccumulator -= dt_floored;
     }
-
-    // SDL_Delay(50);
 }
 
 void Game::render() {
@@ -150,7 +149,7 @@ void Game::render() {
     renderMap();
 
     pacman->render();
-    blinky->render();
+    // blinky->render();
 
     SDL_RenderPresent(renderer);
 }
