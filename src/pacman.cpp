@@ -17,7 +17,7 @@ const int UNITS_PER_PIXEL = 100000;
 const int UNITS_PER_TILE = UNITS_PER_PIXEL * TILE_SIZE;
 
 const int VELOCITY_ONE_TILE_PER_SEC = UNITS_PER_TILE / 1000; // velocity to travel units of one tile in 1000ms
-const int VELOCITY = 1 * VELOCITY_ONE_TILE_PER_SEC; // 5 tiles / sec
+const int VELOCITY = 300 * VELOCITY_ONE_TILE_PER_SEC / 10;
 
 Pacman::Pacman() {
     renderer = Game::getInstance().getRenderer();
@@ -25,9 +25,9 @@ Pacman::Pacman() {
     textureOriented = Game::getInstance().getTextureManager().loadTexture(renderer, PACMAN_TEXTURE_ORIENTED_PATH);
     textureUnoriented = Game::getInstance().getTextureManager().loadTexture(renderer, PACMAN_TEXTURE_UNORIENTED_PATH);
 
-    currTile.x = 10;
+    currTile.x = 3;
     currTile.y = 14;
-    orientation = desiredOrientation = Orientation::LEFT;
+    orientation = desiredOrientation = Orientation::RIGHT;
 
     currPos = currTile * UNITS_PER_TILE;
 
@@ -36,21 +36,57 @@ Pacman::Pacman() {
     animationTimer->start();
 }
 
-int cnt = 0;
-
 void Pacman::update(int deltaTime) {
     Entity2D orientationVector = orientationToVector(orientation);
 
-    int deltaUnits = VELOCITY * deltaTime;
-    currPos = currPos + orientationVector * deltaUnits;
+    Entity2D nextTile = currTile + orientationVector;
+
+    if (Game::getInstance().getTilingManager().getTileState(nextTile.x, nextTile.y) == TileState::FREE) {
+        int deltaUnits = VELOCITY * deltaTime;
+        currPos = currPos + orientationVector * deltaUnits;
+    } /*else if (currPos.x % UNITS_PER_TILE == 0 && currPos.y % UNITS_PER_TILE == 0) {
+        SDL_Log("STOPPED\n");
+        if (Game::getInstance().getTilingManager().getTileState(desiredNextTile.x, desiredNextTile.y) == TileState::FREE) {
+            orientation = desiredOrientation;
+            orientationVector = desiredOrientationVector;
+        }
+    }*/
 
     Entity2D deltaPos = currPos - currTile * UNITS_PER_TILE;
-    // SDL_Log("DeltaPos.x: %d\n", std::abs(deltaPos.x));?
-
     if (std::abs(deltaPos.x) >= UNITS_PER_TILE || std::abs(deltaPos.y) >= UNITS_PER_TILE) {
-        currTile = currPos / UNITS_PER_TILE;
 
-        SDL_Log("ON TILE: %d, X: %d, DPX:%d\n", currTile.x, currPos.x, deltaUnits);
+        switch (orientation) {
+            case Orientation::LEFT:
+                currTile.x--;
+                break;
+            case Orientation::RIGHT:
+                currTile.x++;
+                break;
+            case Orientation::UP:
+                currTile.y--;
+                break;
+            case Orientation::DOWN:
+                currTile.y++;
+                break;
+        }
+
+        Entity2D desiredOrientationVector = orientationToVector(desiredOrientation);
+
+        Entity2D desiredNextTile = currTile + desiredOrientationVector;
+                
+        if (Game::getInstance().getTilingManager().getTileState(desiredNextTile.x, desiredNextTile.y) == TileState::FREE) {
+            orientation = desiredOrientation;
+        }
+
+        currPos = currTile * UNITS_PER_TILE;
+    }
+
+    if (Game::getInstance().getTilingManager().getTileState(nextTile.x, nextTile.y) == TileState::SOLID) {
+        Entity2D desiredOrientationVector = orientationToVector(desiredOrientation);
+    Entity2D desiredNextTile = currTile + desiredOrientationVector;
+        if (Game::getInstance().getTilingManager().getTileState(desiredNextTile.x, desiredNextTile.y) == TileState::FREE) {
+            orientation = desiredOrientation;
+        }
     }
 
     if (animationTimer->getTicks() > ANIMATION_FRAME_DURATION_MS) {
@@ -61,8 +97,8 @@ void Pacman::update(int deltaTime) {
 
 void Pacman::render() {
     SDL_Color textColor = { 255, 255, 255, 255 };
-    Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(currPos.x), 0, 0,         textColor);
-    Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(currPos.y), 0, TILE_SIZE, textColor);
+    Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(currPos.x / UNITS_PER_TILE), 0, 0,         textColor);
+    Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(currPos.y / UNITS_PER_TILE), 0, TILE_SIZE, textColor);
 
     SDL_Rect pacmanRect = { currPos.x / UNITS_PER_PIXEL, currPos.y / UNITS_PER_PIXEL, TEXTURE_W, TEXTURE_H };
     SDL_Texture *texture = animationIndex ? textureUnoriented : textureOriented;
@@ -71,7 +107,7 @@ void Pacman::render() {
     
     SDL_Rect rect = { currTile.x * TILE_SIZE, currTile.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderFillRect(renderer, &rect);
+    SDL_RenderDrawRect(renderer, &rect);
 }
 
 Entity2D Pacman::getTargetTile() {

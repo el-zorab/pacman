@@ -42,9 +42,9 @@ Orientation Blinky::findNewOrientation() {
             currTile.y + orientationCandidateVector.y
         };
 
-        if (!Game::getInstance().getTilingManager().isTileFree(nextTile.x, nextTile.y)) {
-            continue;
-        }
+        // if (!Game::getInstance().getTilingManager().getTileState(nextTile.x, nextTile.y)) {
+        //     continue;
+        // }
 
         int distanceX = (nextTile.x - targetTile.x); // nextTile - getGhostTargetTile
         int distanceY = (nextTile.y - targetTile.y);

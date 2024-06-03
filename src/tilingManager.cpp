@@ -21,9 +21,9 @@ void TilingManager::loadTiling() {
     tilingFile.close();
 }
 
-int TilingManager::isTileFree(int x, int y) {
+TileState TilingManager::getTileState(int x, int y) {
     if (x < 0 || y < 0 || x >= GameConst::TILE_COLS || y >= GameConst::TILE_ROWS) {
-        return y == 14;
+        return y == 14 ? TileState::FREE : TileState::SOLID;
     }
-    return !tiling[x][y];
+    return tiling[x][y] ? TileState::SOLID : TileState::FREE;
 }

@@ -1,3 +1,4 @@
+#include <cmath>
 #include <fstream>
 #include <stdio.h>
 #include <SDL2/SDL_image.h>
@@ -180,7 +181,9 @@ void Game::renderMap() {
     SDL_SetRenderDrawColor(renderer, 52, 110, 235, 255);
     for (int i = 0; i < GameConst::TILE_COLS; i++) {
         for (int j = 0; j < GameConst::TILE_ROWS; j++) {
-            if (tilingManager->isTileFree(i, j)) continue;
+            if (tilingManager->getTileState(i, j) == TileState::FREE) {
+                continue;
+            }
 
             SDL_Rect tileRect = {
                 GameConst::TILE_SIZE * i + OFFSET,
