@@ -22,7 +22,6 @@ public:
     void setDesiredOrientation(Orientation desiredOrientation);
 
 private:
-    SDL_Renderer *renderer;
     SDL_Texture *textureOriented;
     SDL_Texture *textureUnoriented;
 
@@ -30,8 +29,10 @@ private:
     const int TEXTURE_H = GameConst::TILE_SIZE;
 
     Entity2D currPos;
-    Entity2D currTile;
+    Entity2D currTile, nextTile;
     Orientation orientation, desiredOrientation;
+
+    const int VELOCITY = 80 * GameConst::VELOCITY_ONE_TILE_PER_SEC / 10;
 
     const Uint32 ANIMATION_FRAME_DURATION_MS = 100;
     const int ANIMATION_FRAMES = 2;

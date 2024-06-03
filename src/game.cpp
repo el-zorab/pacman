@@ -50,7 +50,7 @@ void Game::init(std::string title, int x, int y) {
     tilingManager->loadTiling();
 
     pacman = std::make_unique<Pacman>();
-    blinky = std::make_unique<Blinky>();
+    // blinky = std::make_unique<Blinky>();
 
     frameAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -139,7 +139,7 @@ void Game::update() {
 
     while (frameAccumulator >= dt_floored) {        
         pacman->update(dt_floored);
-        // blinky->update();
+        // blinky->update(dt_floored);
 
         frameAccumulator -= dt_floored;
     }

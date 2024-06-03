@@ -4,7 +4,6 @@
 #include <SDL2/SDL.h>
 #include <string>
 
-#include "blinky.hpp"
 #include "fontRenderer.hpp"
 #include "pacman.hpp"
 #include "textureManager.hpp"
@@ -49,7 +48,7 @@ private:
     std::unique_ptr<TilingManager> tilingManager;
 
     std::unique_ptr<Pacman> pacman;
-    std::unique_ptr<Blinky> blinky;
+    // std::unique_ptr<Blinky> blinky;
 
     double frameAccumulator;
     std::unique_ptr<Timer> frameTimer;

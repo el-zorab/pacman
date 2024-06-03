@@ -10,7 +10,7 @@ public:
     TextureManager();
     void close();
 
-    SDL_Texture *loadTexture(SDL_Renderer *renderer, std::string filename, bool exitOnError = true);
+    SDL_Texture *loadTexture(std::string filename, bool exitOnError = true);
 
 private:    
     std::map<std::string, SDL_Texture*> textures;
