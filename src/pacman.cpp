@@ -37,8 +37,11 @@ void Pacman::update(int deltaTime) {
 
     // "walk" if the next tile is free
     if (Game::getInstance().getTilingManager().getTileState(nextTile.x, nextTile.y) == TileState::FREE) {
-        int deltaUnits = VELOCITY * deltaTime;
-        currPos = currPos + orientationVector * deltaUnits;
+        if (currPos.x / UNITS_PER_PIXEL <= -16) currPos.x = (GameConst::WINDOW_WIDTH + 16) * UNITS_PER_PIXEL;
+        else {
+            int deltaUnits = VELOCITY * deltaTime;
+            currPos = currPos + orientationVector * deltaUnits;
+        }
     // stop if the next tile is solid
     } else {
         // and try to change pacman's orientation
@@ -85,9 +88,9 @@ void Pacman::update(int deltaTime) {
 void Pacman::render() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
 
-    // SDL_Color textColor = { 255, 255, 255, 255 };
-    // Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(currPos.x / UNITS_PER_TILE), 0, 0,         textColor);
-    // Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(currPos.y / UNITS_PER_TILE), 0, TILE_SIZE, textColor);
+    SDL_Color textColor = { 255, 255, 255, 255 };
+    Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(currPos.x / UNITS_PER_TILE), 0, 0,         textColor);
+    Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(currPos.y / UNITS_PER_TILE), 0, TILE_SIZE, textColor);
 
     SDL_Rect pacmanRect = { currPos.x / UNITS_PER_PIXEL, currPos.y / UNITS_PER_PIXEL, TEXTURE_W, TEXTURE_H };
     SDL_Texture *texture = animationIndex ? textureUnoriented : textureOriented;

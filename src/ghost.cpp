@@ -5,20 +5,19 @@
 
 using GameConst::UNITS_PER_TILE;
 
-const std::string BLINKY_TEXTURE_PATH = "arrow.png";
+Ghost::Ghost() {}
 
-const SDL_Color BLINKY_COLOR = { 255, 0, 255, 255 };
+void Ghost::init(Entity2D startTile, Orientation startOrientation) {
+    blinkyTexture = Game::getInstance().getTextureManager().loadTexture(getTexturePath());
+    SDL_Color textureColor = getTextureColor();
+    SDL_SetTextureColorMod(blinkyTexture, textureColor.r, textureColor.g, textureColor.b);
 
-Blinky::Blinky() {
-    blinkyTexture = Game::getInstance().getTextureManager().loadTexture(BLINKY_TEXTURE_PATH);
-    SDL_SetTextureColorMod(blinkyTexture, BLINKY_COLOR.r, BLINKY_COLOR.g, BLINKY_COLOR.b);
-
-    currTile = { 6, 5 };
+    currTile = startTile;
     currPos = currTile * UNITS_PER_TILE;
-    orientation = Orientation::DOWN;
+    orientation = startOrientation;
 }
 
-Orientation Blinky::getNewOrientation() {
+Orientation Ghost::getNewOrientation() {
     int minDistance = 10000000;
 
     Orientation newOrientation;
@@ -39,7 +38,7 @@ Orientation Blinky::getNewOrientation() {
             continue;
         }
 
-        Entity2D targetTile = Game::getInstance().getPacman().getTargetTile();
+        Entity2D targetTile = getTargetTile();
 
         int distanceX = (nextTile.x - targetTile.x);
         int distanceY = (nextTile.y - targetTile.y);
@@ -54,10 +53,10 @@ Orientation Blinky::getNewOrientation() {
     return newOrientation;
 }
 
-void Blinky::update(int deltaTime) {
+void Ghost::update(int deltaTime) {
     Entity2D orientationVector = orientationToVector(orientation);
 
-    int deltaUnits = VELOCITY * deltaTime;
+    int deltaUnits = getVelocity() * deltaTime;
     currPos = currPos + orientationVector * deltaUnits;
 
     Entity2D deltaPos = currPos - currTile * UNITS_PER_TILE;
@@ -83,13 +82,28 @@ void Blinky::update(int deltaTime) {
     }
 }
 
-void Blinky::render() {
+void Ghost::render() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
 
-    SDL_Color textColor = { 255, 255, 255, 255 };
-    Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(currPos.x), 0, 0,         textColor);
-    Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(currPos.y), 0, GameConst::TILE_SIZE, textColor);
-
-    SDL_Rect blinkyRect = { currPos.x / GameConst::UNITS_PER_PIXEL, currPos.y / GameConst::UNITS_PER_PIXEL, GameConst::TILE_SIZE, GameConst::TILE_SIZE };
+    SDL_Rect blinkyRect = {
+        currPos.x / GameConst::UNITS_PER_PIXEL,
+        currPos.y / GameConst::UNITS_PER_PIXEL,
+        GameConst::TILE_SIZE,
+        GameConst::TILE_SIZE
+    };
     SDL_RenderCopyEx(renderer, blinkyTexture, nullptr, &blinkyRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
+
+    SDL_Rect targetTileRect = {
+        getTargetTile().x * GameConst::TILE_SIZE,
+        getTargetTile().y * GameConst::TILE_SIZE,
+        GameConst::TILE_SIZE,
+        GameConst::TILE_SIZE
+    };
+    SDL_Color textureColor = getTextureColor();
+    SDL_SetRenderDrawColor(renderer, textureColor.r, textureColor.g, textureColor.b, textureColor.a);
+    SDL_RenderDrawRect(renderer, &targetTileRect);
+}
+
+Entity2D Ghost::getCurrentTile() {
+    return currTile;
 }

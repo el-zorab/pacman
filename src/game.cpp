@@ -4,7 +4,10 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "blinky.hpp"
 #include "game.hpp"
+#include "inky.hpp"
+#include "pinky.hpp"
 #include "textureManager.hpp"
 #include "tilingManager.hpp"
 
@@ -50,7 +53,14 @@ void Game::init(std::string title, int x, int y) {
     tilingManager->loadTiling();
 
     pacman = std::make_unique<Pacman>();
-    // blinky = std::make_unique<Blinky>();
+
+    ghosts[GhostName::BLINKY] = std::make_shared<Blinky>();
+    ghosts[GhostName::PINKY] = std::make_shared<Pinky>();
+    ghosts[GhostName::INKY] = std::make_shared<Inky>();
+
+    ghosts[GhostName::BLINKY]->init({10, 17}, Orientation::RIGHT);
+    ghosts[GhostName::PINKY]->init({12, 17}, Orientation::RIGHT);
+    ghosts[GhostName::INKY]->init({15, 17}, Orientation::RIGHT);
 
     frameAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -99,6 +109,10 @@ Pacman &Game::getPacman() {
     return *pacman;
 }
 
+Ghost &Game::getBlinky() {
+    return *ghosts[GhostName::BLINKY];
+}
+
 void Game::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -139,7 +153,9 @@ void Game::update() {
 
     while (frameAccumulator >= dt_floored) {        
         pacman->update(dt_floored);
-        // blinky->update(dt_floored);
+        for (auto const &ghost : ghosts) {
+            ghost->update(dt_floored);
+        }
 
         frameAccumulator -= dt_floored;
     }
@@ -149,8 +165,10 @@ void Game::render() {
     renderBackground();
     renderMap();
 
+    for (auto const &ghost : ghosts) {
+        ghost->render();
+    }
     pacman->render();
-    // blinky->render();
 
     SDL_RenderPresent(renderer);
 }

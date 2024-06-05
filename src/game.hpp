@@ -1,10 +1,12 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <SDL2/SDL.h>
 #include <string>
 
 #include "fontRenderer.hpp"
+#include "ghost.hpp"
 #include "pacman.hpp"
 #include "textureManager.hpp"
 #include "tilingManager.hpp"
@@ -31,6 +33,7 @@ public:
     TilingManager &getTilingManager();
 
     Pacman &getPacman();
+    Ghost &getBlinky();
 
     void handleEvents();
     void update();
@@ -48,7 +51,14 @@ private:
     std::unique_ptr<TilingManager> tilingManager;
 
     std::unique_ptr<Pacman> pacman;
-    // std::unique_ptr<Blinky> blinky;
+
+    enum GhostName : int {
+        BLINKY = 0,
+        PINKY = 1,
+        INKY = 2
+    };
+
+    std::array<std::shared_ptr<Ghost>, 3> ghosts; 
 
     double frameAccumulator;
     std::unique_ptr<Timer> frameTimer;
