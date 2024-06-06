@@ -10,7 +10,4 @@ public:
 private:
     Entity2D getTargetTile() override;
     SDL_Color getTextureColor() override;
-    std::string getTexturePath() override;
-    int getVelocity() override;
-
 };

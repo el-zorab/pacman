@@ -13,7 +13,6 @@ class TilingManager {
 public:
     TilingManager();
 
-    void loadTiling();
     TileState getTileState(int x, int y);
 
 private:

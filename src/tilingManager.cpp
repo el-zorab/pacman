@@ -5,9 +5,7 @@
 
 const std::string TILING_FILE_PATH = "res/tiling.dat";
 
-TilingManager::TilingManager(){}
-
-void TilingManager::loadTiling() {
+TilingManager::TilingManager() {
     std::ifstream tilingFile(TILING_FILE_PATH);
 
     for (int j = 0; j < GameConst::TILE_ROWS; j++) {

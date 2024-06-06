@@ -5,6 +5,7 @@
 #include <SDL2/SDL_ttf.h>
 
 #include "blinky.hpp"
+#include "clyde.hpp"
 #include "game.hpp"
 #include "inky.hpp"
 #include "pinky.hpp"
@@ -50,17 +51,19 @@ void Game::init(std::string title, int x, int y) {
     fontRenderer = std::make_unique<FontRenderer>("jetbrains_mono_regular.ttf", GameConst::TILE_SIZE);
     textureManager = std::make_unique<TextureManager>();
     tilingManager = std::make_unique<TilingManager>();
-    tilingManager->loadTiling();
+    pelletManager = std::make_unique<PelletManager>();
 
     pacman = std::make_unique<Pacman>();
 
-    ghosts[GhostName::BLINKY] = std::make_shared<Blinky>();
-    ghosts[GhostName::PINKY] = std::make_shared<Pinky>();
-    ghosts[GhostName::INKY] = std::make_shared<Inky>();
+    ghosts[GhostName::BLINKY] = std::make_unique<Blinky>();
+    ghosts[GhostName::PINKY] = std::make_unique<Pinky>();
+    ghosts[GhostName::INKY] = std::make_unique<Inky>();
+    ghosts[GhostName::CLYDE] = std::make_unique<Clyde>();
 
-    ghosts[GhostName::BLINKY]->init({10, 17}, Orientation::RIGHT);
-    ghosts[GhostName::PINKY]->init({12, 17}, Orientation::RIGHT);
-    ghosts[GhostName::INKY]->init({15, 17}, Orientation::RIGHT);
+    ghosts[GhostName::BLINKY]->init({10, 14}, Orientation::RIGHT);
+    ghosts[GhostName::PINKY]->init({12, 14}, Orientation::RIGHT);
+    ghosts[GhostName::INKY]->init({15, 14}, Orientation::RIGHT);
+    ghosts[GhostName::CLYDE]->init({16, 14}, Orientation::RIGHT);
 
     frameAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -151,11 +154,18 @@ void Game::update() {
     const double dt = 1000.f / SIMULATION_FRAMERATE;
     const double dt_floored = std::floor(dt);
 
-    while (frameAccumulator >= dt_floored) {        
+    while (frameAccumulator >= dt_floored && gameRunning) {        
         pacman->update(dt_floored);
         for (auto const &ghost : ghosts) {
             ghost->update(dt_floored);
+            
+            if (ghost->getCurrentTile() == pacman->getCurrentTile()) {
+                SDL_Log("You died!\n");
+                // stopRunning();
+            }
         }
+
+        pelletManager->removePellet(pacman->getCurrentTile().x, pacman->getCurrentTile().y);
 
         frameAccumulator -= dt_floored;
     }
@@ -164,6 +174,7 @@ void Game::update() {
 void Game::render() {
     renderBackground();
     renderMap();
+    pelletManager->renderPellets();
 
     for (auto const &ghost : ghosts) {
         ghost->render();

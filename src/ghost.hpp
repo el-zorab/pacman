@@ -22,15 +22,17 @@ public:
 
 private:
     SDL_Texture *blinkyTexture;
+    SDL_Texture *targetTileTexture;
 
     Entity2D currPos;
     Entity2D currTile;
     Orientation orientation;
 
+    const int VELOCITY = GameConst::VELOCITY_TILES_PER_SEC * 75 / 10;
+
     Orientation getNewOrientation();
 
     virtual Entity2D getTargetTile() = 0;
     virtual SDL_Color getTextureColor() = 0;
-    virtual std::string getTexturePath() = 0;
-    virtual int getVelocity() = 0;
+
 };

@@ -8,6 +8,7 @@
 #include "fontRenderer.hpp"
 #include "ghost.hpp"
 #include "pacman.hpp"
+#include "pelletManager.hpp"
 #include "textureManager.hpp"
 #include "tilingManager.hpp"
 #include "timer.hpp"
@@ -49,16 +50,20 @@ private:
     std::unique_ptr<FontRenderer> fontRenderer;
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<TilingManager> tilingManager;
+    std::unique_ptr<PelletManager> pelletManager;
 
     std::unique_ptr<Pacman> pacman;
-
+    
     enum GhostName : int {
         BLINKY = 0,
         PINKY = 1,
-        INKY = 2
+        INKY = 2,
+        CLYDE = 3
     };
 
-    std::array<std::shared_ptr<Ghost>, 3> ghosts; 
+    static const int GHOST_COUNT = 4;
+
+    std::array<std::unique_ptr<Ghost>, GHOST_COUNT> ghosts; 
 
     double frameAccumulator;
     std::unique_ptr<Timer> frameTimer;

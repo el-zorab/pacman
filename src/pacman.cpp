@@ -37,8 +37,13 @@ void Pacman::update(int deltaTime) {
 
     // "walk" if the next tile is free
     if (Game::getInstance().getTilingManager().getTileState(nextTile.x, nextTile.y) == TileState::FREE) {
-        if (currPos.x / UNITS_PER_PIXEL <= -16) currPos.x = (GameConst::WINDOW_WIDTH + 16) * UNITS_PER_PIXEL;
-        else {
+        if (currPos.x < GameConst::WARPING_MIN_X) {
+            currPos.x = GameConst::WARPING_MAX_X;
+            currTile.x = currPos.x / UNITS_PER_TILE;
+        } else if (currPos.x > GameConst::WARPING_MAX_X) {
+            currPos.x = GameConst::WARPING_MIN_X;
+            currTile.x = currPos.x / UNITS_PER_TILE;
+        } else {
             int deltaUnits = VELOCITY * deltaTime;
             currPos = currPos + orientationVector * deltaUnits;
         }
@@ -96,13 +101,13 @@ void Pacman::render() {
     SDL_Texture *texture = animationIndex ? textureUnoriented : textureOriented;
     SDL_RenderCopyEx(renderer, texture, nullptr, &pacmanRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
     
-    SDL_Rect currTileRect = { currTile.x * TILE_SIZE, currTile.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-    SDL_RenderDrawRect(renderer, &currTileRect);
+    // SDL_Rect currTileRect = { currTile.x * TILE_SIZE + 1, currTile.y * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2 };
+    // SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+    // SDL_RenderDrawRect(renderer, &currTileRect);
 }
 
-Entity2D Pacman::getTargetTile() {
-    return nextTile;
+Entity2D Pacman::getCurrentTile() {
+    return currTile;
 }
 
 Orientation Pacman::getOrientation() {

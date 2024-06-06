@@ -8,3 +8,4 @@ Entity2D operator+(Entity2D a, Entity2D b);
 Entity2D operator-(Entity2D a, Entity2D b);
 Entity2D operator*(Entity2D a, int scalar);
 Entity2D operator/(Entity2D a, int scalar);
+bool operator==(Entity2D a, Entity2D b);

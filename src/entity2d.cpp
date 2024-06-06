@@ -27,3 +27,7 @@ Entity2D operator/(Entity2D a, int scalar) {
     b.y = a.y / scalar;
     return b;
 }
+
+bool operator==(Entity2D a, Entity2D b) {
+    return a.x == b.x && a.y == b.y;
+}

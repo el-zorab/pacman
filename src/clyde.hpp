@@ -2,10 +2,10 @@
 
 #include "ghost.hpp"
 
-class Blinky : public Ghost {
+class Clyde : public Ghost {
 
 public:
-    Blinky();
+    Clyde();
 
 private:
     Entity2D getTargetTile() override;

@@ -24,6 +24,5 @@ void TextureManager::close() {
     for (auto &x : textures) {
         SDL_DestroyTexture(x.second);
         x.second = nullptr;
-        SDL_Log("SDL_DestroyTexture(%s)\n", x.first.c_str());
     }
 }

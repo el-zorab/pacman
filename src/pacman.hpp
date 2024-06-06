@@ -17,7 +17,7 @@ public:
     void update(int deltaTime);
     void render();
 
-    Entity2D getTargetTile();
+    Entity2D getCurrentTile();
     Orientation getOrientation();
     void setDesiredOrientation(Orientation desiredOrientation);
 
@@ -32,7 +32,7 @@ private:
     Entity2D currTile, nextTile;
     Orientation orientation, desiredOrientation;
 
-    const int VELOCITY = 80 * GameConst::VELOCITY_ONE_TILE_PER_SEC / 10;
+    const int VELOCITY = GameConst::VELOCITY_TILES_PER_SEC * 80 / 10;
 
     const Uint32 ANIMATION_FRAME_DURATION_MS = 100;
     const int ANIMATION_FRAMES = 2;

@@ -3,14 +3,17 @@
 #include "game.hpp"
 #include "ghost.hpp"
 
-using GameConst::UNITS_PER_TILE;
+using GameConst::TILE_SIZE, GameConst::UNITS_PER_PIXEL, GameConst::UNITS_PER_TILE;
 
 Ghost::Ghost() {}
 
 void Ghost::init(Entity2D startTile, Orientation startOrientation) {
-    blinkyTexture = Game::getInstance().getTextureManager().loadTexture(getTexturePath());
+    blinkyTexture     = Game::getInstance().getTextureManager().loadTexture("arrow.png");
+    targetTileTexture = Game::getInstance().getTextureManager().loadTexture("x.png");
+
     SDL_Color textureColor = getTextureColor();
-    SDL_SetTextureColorMod(blinkyTexture, textureColor.r, textureColor.g, textureColor.b);
+    SDL_SetTextureColorMod(blinkyTexture,     textureColor.r, textureColor.g, textureColor.b);
+    SDL_SetTextureColorMod(targetTileTexture, textureColor.r, textureColor.g, textureColor.b);
 
     currTile = startTile;
     currPos = currTile * UNITS_PER_TILE;
@@ -38,11 +41,8 @@ Orientation Ghost::getNewOrientation() {
             continue;
         }
 
-        Entity2D targetTile = getTargetTile();
-
-        int distanceX = (nextTile.x - targetTile.x);
-        int distanceY = (nextTile.y - targetTile.y);
-        int distance = distanceX * distanceX + distanceY * distanceY;
+        Entity2D distVector = nextTile - getTargetTile();
+        int distance = distVector.x * distVector.x + distVector.y * distVector.y;
 
         if (distance < minDistance) {
             minDistance = distance;
@@ -54,10 +54,17 @@ Orientation Ghost::getNewOrientation() {
 }
 
 void Ghost::update(int deltaTime) {
-    Entity2D orientationVector = orientationToVector(orientation);
-
-    int deltaUnits = getVelocity() * deltaTime;
-    currPos = currPos + orientationVector * deltaUnits;
+    if (currPos.x < GameConst::WARPING_MIN_X) {
+        currPos.x = GameConst::WARPING_MAX_X;
+        currTile.x = currPos.x / UNITS_PER_TILE;
+    } else if (currPos.x > GameConst::WARPING_MAX_X) {
+        currPos.x = GameConst::WARPING_MIN_X;
+        currTile.x = currPos.x / UNITS_PER_TILE;
+    } else {
+        Entity2D orientationVector = orientationToVector(orientation);
+        int deltaUnits = VELOCITY * deltaTime;
+        currPos = currPos + orientationVector * deltaUnits;
+    }
 
     Entity2D deltaPos = currPos - currTile * UNITS_PER_TILE;
     if (std::abs(deltaPos.x) >= UNITS_PER_TILE || std::abs(deltaPos.y) >= UNITS_PER_TILE) {
@@ -85,23 +92,16 @@ void Ghost::update(int deltaTime) {
 void Ghost::render() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
 
-    SDL_Rect blinkyRect = {
-        currPos.x / GameConst::UNITS_PER_PIXEL,
-        currPos.y / GameConst::UNITS_PER_PIXEL,
-        GameConst::TILE_SIZE,
-        GameConst::TILE_SIZE
-    };
+    SDL_Rect blinkyRect = { currPos.x / UNITS_PER_PIXEL, currPos.y / UNITS_PER_PIXEL, TILE_SIZE, TILE_SIZE };
     SDL_RenderCopyEx(renderer, blinkyTexture, nullptr, &blinkyRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
 
-    SDL_Rect targetTileRect = {
-        getTargetTile().x * GameConst::TILE_SIZE,
-        getTargetTile().y * GameConst::TILE_SIZE,
-        GameConst::TILE_SIZE,
-        GameConst::TILE_SIZE
-    };
-    SDL_Color textureColor = getTextureColor();
-    SDL_SetRenderDrawColor(renderer, textureColor.r, textureColor.g, textureColor.b, textureColor.a);
-    SDL_RenderDrawRect(renderer, &targetTileRect);
+    // SDL_Rect targetTileRect = { getTargetTile().x * TILE_SIZE, getTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    // SDL_RenderCopy(renderer, targetTileTexture, nullptr, &targetTileRect);
+
+    // SDL_Rect currTileRect = { currTile.x * TILE_SIZE, currTile.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    // SDL_Color rectColor = getTextureColor();
+    // SDL_SetRenderDrawColor(renderer, rectColor.r, rectColor.g, rectColor.b, rectColor.a);
+    // SDL_RenderDrawRect(renderer, &currTileRect);
 }
 
 Entity2D Ghost::getCurrentTile() {
