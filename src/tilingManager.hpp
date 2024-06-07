@@ -14,6 +14,7 @@ public:
     TilingManager();
 
     TileState getTileState(int x, int y);
+    void renderTiles();
 
 private:
     std::array<std::array<bool, GameConst::TILE_ROWS>, GameConst::TILE_COLS> tiling;

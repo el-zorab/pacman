@@ -111,7 +111,6 @@ TilingManager &Game::getTilingManager() {
 Pacman &Game::getPacman() {
     return *pacman;
 }
-
 Ghost &Game::getBlinky() {
     return *ghosts[GhostName::BLINKY];
 }
@@ -122,14 +121,15 @@ void Game::handleEvents() {
         if (event.type == SDL_QUIT) {
             stopRunning();
         } else if (event.type == SDL_KEYDOWN) {
+
             switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
-                case SDLK_a:
                     pacman->setDesiredOrientation(Orientation::LEFT);
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
                     pacman->setDesiredOrientation(Orientation::RIGHT);
+                case SDLK_a:
                     break;
                 case SDLK_UP:
                 case SDLK_w:
@@ -160,7 +160,7 @@ void Game::update() {
             ghost->update(dt_floored);
             
             if (ghost->getCurrentTile() == pacman->getCurrentTile()) {
-                SDL_Log("You died!\n");
+                // SDL_Log("You died!\n");
                 // stopRunning();
             }
         }
@@ -173,7 +173,7 @@ void Game::update() {
 
 void Game::render() {
     renderBackground();
-    renderMap();
+    tilingManager->renderTiles();
     pelletManager->renderPellets();
 
     for (auto const &ghost : ghosts) {
@@ -185,8 +185,8 @@ void Game::render() {
 }
 
 void Game::renderBackground() {
-    SDL_Color BG_TILE_COLOR_A = { 0, 0, 0, 255 };
-    SDL_Color BG_TILE_COLOR_B = { 25, 25, 25, 255 };
+    const SDL_Color BG_TILE_COLOR_A = { 0, 0, 0, 255 };
+    const SDL_Color BG_TILE_COLOR_B = { 25, 25, 25, 255 };
     
     for (int i = 0; i < GameConst::TILE_COLS; i++) {
         for (int j = 0; j < GameConst::TILE_ROWS; j++) {
@@ -199,28 +199,6 @@ void Game::renderBackground() {
 
             SDL_Color color = (i + j) % 2 == 0 ? BG_TILE_COLOR_A : BG_TILE_COLOR_B;
             SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-            SDL_RenderFillRect(renderer, &tileRect);
-        }
-    }
-}
-
-void Game::renderMap() {
-    static const int OFFSET = 1;
-
-    SDL_SetRenderDrawColor(renderer, 52, 110, 235, 255);
-    for (int i = 0; i < GameConst::TILE_COLS; i++) {
-        for (int j = 0; j < GameConst::TILE_ROWS; j++) {
-            if (tilingManager->getTileState(i, j) == TileState::FREE) {
-                continue;
-            }
-
-            SDL_Rect tileRect = {
-                GameConst::TILE_SIZE * i + OFFSET,
-                GameConst::TILE_SIZE * j + OFFSET,
-                GameConst::TILE_SIZE - 2 * OFFSET,
-                GameConst::TILE_SIZE - 2 * OFFSET
-            };
-
             SDL_RenderFillRect(renderer, &tileRect);
         }
     }

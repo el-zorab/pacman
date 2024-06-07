@@ -69,5 +69,4 @@ private:
     std::unique_ptr<Timer> frameTimer;
 
     void renderBackground();
-    void renderMap();
 };
