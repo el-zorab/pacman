@@ -8,7 +8,8 @@ public:
     Inky();
 
 private:
-    Entity2D getTargetTile() override;
+    Entity2D getChaseTargetTile() override;
+    Entity2D getScatterTargetTile() override;
     SDL_Color getTextureColor() override;
 
 };

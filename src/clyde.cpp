@@ -4,7 +4,7 @@
 
 Clyde::Clyde() {}
 
-Entity2D Clyde::getTargetTile() {
+Entity2D Clyde::getChaseTargetTile() {
     Entity2D pacmanCurrTile = Game::getInstance().getPacman().getCurrentTile();
     Entity2D distVector = pacmanCurrTile - getCurrentTile();
     int distance = distVector.x * distVector.x + distVector.y * distVector.y;
@@ -13,6 +13,10 @@ Entity2D Clyde::getTargetTile() {
     } else {
         return { 0, 34 };
     }
+}
+
+Entity2D Clyde::getScatterTargetTile() {
+    return { 0, 34 };
 }
 
 SDL_Color Clyde::getTextureColor() {

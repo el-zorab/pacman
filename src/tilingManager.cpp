@@ -1,10 +1,11 @@
 #include <fstream>
-#include <SDL2/SDL.h>
 #include <string>
 
 #include "game.hpp"
 #include "orientation.hpp"
 #include "tilingManager.hpp"
+
+using GameConst::TILE_SIZE;
 
 const std::string TILING_FILE_PATH = "res/tiling.dat";
 
@@ -20,6 +21,9 @@ TilingManager::TilingManager() {
     }
 
     tilingFile.close();
+
+    tilingTexture = Game::getInstance().getTextureManager().loadTexture("tiles.png");
+    SDL_SetTextureColorMod(tilingTexture, 52, 110, 235);
 }
 
 
@@ -33,28 +37,36 @@ TileState TilingManager::getTileState(int x, int y) {
 void TilingManager::renderTiles() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
 
-    SDL_SetRenderDrawColor(renderer, 52, 110, 235, 255);
     for (int i = 0; i < GameConst::TILE_COLS; i++) {
         for (int j = 0; j < GameConst::TILE_ROWS; j++) {
             if (getTileState(i, j) == TileState::FREE) {
                 continue;
             }
 
+            SDL_Rect destRect = {
+                TILE_SIZE * i,
+                TILE_SIZE * j,
+                TILE_SIZE,
+                TILE_SIZE
+            };
+
             int neighbours = 0;
             for (int k = 0; k < ORIENTATIONS; k++) {
                 Orientation orientation = static_cast<Orientation>(k);
                 Entity2D vec = orientationToVector(orientation);
-                neighbours |= getTileState(i + vec.x, j + vec.y)
+                Entity2D neighbourTile = {
+                    i + vec.x,
+                    j + vec.y
+                };
+                if (neighbourTile.x < 0 || neighbourTile.x >= GameConst::TILE_COLS) continue;
+                neighbours |= (getTileState(neighbourTile.x, neighbourTile.y) == TileState::SOLID) << k;
             }
 
-            SDL_Rect tileRect = {
-                GameConst::TILE_SIZE * i,
-                GameConst::TILE_SIZE * j,
-                GameConst::TILE_SIZE,
-                GameConst::TILE_SIZE
-            };
+            const int TEXTURE_TILE_SIZE = 32;
 
-            SDL_RenderFillRect(renderer, &tileRect);
+            SDL_Rect srcRect = { TEXTURE_TILE_SIZE * neighbours, 0, TEXTURE_TILE_SIZE, TEXTURE_TILE_SIZE };
+
+            SDL_RenderCopy(renderer, tilingTexture, &srcRect, &destRect);
         }
     }
 }

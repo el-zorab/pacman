@@ -12,7 +12,7 @@
 #include "textureManager.hpp"
 #include "tilingManager.hpp"
 
-Game::Game(_ctr_tag){}
+Game::Game(_ctr_tag) {}
 
 Game &Game::getInstance() {
     static std::unique_ptr<Game> instance = std::make_unique<Game>(_ctr_tag{});
@@ -60,10 +60,10 @@ void Game::init(std::string title, int x, int y) {
     ghosts[GhostName::INKY] = std::make_unique<Inky>();
     ghosts[GhostName::CLYDE] = std::make_unique<Clyde>();
 
-    ghosts[GhostName::BLINKY]->init({10, 14}, Orientation::RIGHT);
-    ghosts[GhostName::PINKY]->init({12, 14}, Orientation::RIGHT);
-    ghosts[GhostName::INKY]->init({15, 14}, Orientation::RIGHT);
-    ghosts[GhostName::CLYDE]->init({16, 14}, Orientation::RIGHT);
+    ghosts[GhostName::BLINKY]->init({10, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
+    ghosts[GhostName::PINKY]->init({12, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
+    ghosts[GhostName::INKY]->init({15, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
+    ghosts[GhostName::CLYDE]->init({16, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
 
     frameAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -96,10 +96,6 @@ SDL_Renderer *Game::getRenderer() {
     return renderer;
 };
 
-FontRenderer &Game::getFontRenderer() {
-    return *fontRenderer;
-}
-
 TextureManager &Game::getTextureManager() {
     return *textureManager;
 }
@@ -113,6 +109,10 @@ Pacman &Game::getPacman() {
 }
 Ghost &Game::getBlinky() {
     return *ghosts[GhostName::BLINKY];
+}
+
+void Game::renderText(std::string text, int x, int y, SDL_Color color) {
+    fontRenderer->renderText(renderer, text, x, y, color);
 }
 
 void Game::handleEvents() {
@@ -172,6 +172,8 @@ void Game::update() {
 }
 
 void Game::render() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
     renderBackground();
     tilingManager->renderTiles();
     pelletManager->renderPellets();
@@ -185,8 +187,11 @@ void Game::render() {
 }
 
 void Game::renderBackground() {
-    const SDL_Color BG_TILE_COLOR_A = { 0, 0, 0, 255 };
+    const SDL_Color BG_TILE_COLOR_A = { 15, 15, 15, 255 };
     const SDL_Color BG_TILE_COLOR_B = { 25, 25, 25, 255 };
+
+    // const SDL_Color BG_TILE_COLOR_A = { 51, 51, 51, 255 };
+    // const SDL_Color BG_TILE_COLOR_B = { 100, 100, 100, 255 };
     
     for (int i = 0; i < GameConst::TILE_COLS; i++) {
         for (int j = 0; j < GameConst::TILE_ROWS; j++) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <SDL2/SDL.h>
 
 #include "gameConst.hpp"
 
@@ -18,5 +19,7 @@ public:
 
 private:
     std::array<std::array<bool, GameConst::TILE_ROWS>, GameConst::TILE_COLS> tiling;
+
+    SDL_Texture *tilingTexture;
 
 };

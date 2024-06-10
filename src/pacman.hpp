@@ -25,9 +25,6 @@ private:
     SDL_Texture *textureOriented;
     SDL_Texture *textureUnoriented;
 
-    const int TEXTURE_W = GameConst::TILE_SIZE;
-    const int TEXTURE_H = GameConst::TILE_SIZE;
-
     Entity2D currPos;
     Entity2D currTile, nextTile;
     Orientation orientation, desiredOrientation;

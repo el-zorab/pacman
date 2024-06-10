@@ -29,13 +29,14 @@ public:
 
     SDL_Renderer *getRenderer();
 
-    FontRenderer &getFontRenderer();
     TextureManager &getTextureManager();
     TilingManager &getTilingManager();
 
     Pacman &getPacman();
     Ghost &getBlinky();
 
+    void renderText(std::string text, int x, int y, SDL_Color color);
+    
     void handleEvents();
     void update();
     void render();

@@ -7,17 +7,29 @@ using GameConst::TILE_SIZE, GameConst::UNITS_PER_PIXEL, GameConst::UNITS_PER_TIL
 
 Ghost::Ghost() {}
 
-void Ghost::init(Entity2D startTile, Orientation startOrientation) {
-    blinkyTexture     = Game::getInstance().getTextureManager().loadTexture("arrow.png");
-    targetTileTexture = Game::getInstance().getTextureManager().loadTexture("x.png");
+void Ghost::init(Entity2D startTile, Orientation startOrientation, State startState) {
+    ghostTexture     = Game::getInstance().getTextureManager().loadTexture("ghost.png");
+    targetTileTexture = Game::getInstance().getTextureManager().loadTexture("target_tile.png");
 
     SDL_Color textureColor = getTextureColor();
-    SDL_SetTextureColorMod(blinkyTexture,     textureColor.r, textureColor.g, textureColor.b);
+    SDL_SetTextureColorMod(ghostTexture,      textureColor.r, textureColor.g, textureColor.b);
     SDL_SetTextureColorMod(targetTileTexture, textureColor.r, textureColor.g, textureColor.b);
 
     currTile = startTile;
     currPos = currTile * UNITS_PER_TILE;
     orientation = startOrientation;
+    state = startState;
+}
+
+Entity2D Ghost::getTargetTile() {
+    switch (state) {
+        case State::CHASE:
+            return getChaseTargetTile();
+        case State::SCATTER:
+            return getScatterTargetTile();
+        case State::FRIGHTENED:
+            return { 0, 0 };
+    }
 }
 
 Orientation Ghost::getNewOrientation() {
@@ -92,11 +104,17 @@ void Ghost::update(int deltaTime) {
 void Ghost::render() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
 
-    SDL_Rect blinkyRect = { currPos.x / UNITS_PER_PIXEL, currPos.y / UNITS_PER_PIXEL, TILE_SIZE, TILE_SIZE };
-    SDL_RenderCopyEx(renderer, blinkyTexture, nullptr, &blinkyRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
+    SDL_Rect blinkyRect = {
+        currPos.x / UNITS_PER_PIXEL - TILE_SIZE / 2,
+        currPos.y / UNITS_PER_PIXEL - TILE_SIZE / 2,
+        GameConst::ENTITY_TEXTURE_SIZE,
+        GameConst::ENTITY_TEXTURE_SIZE
+    };
 
-    // SDL_Rect targetTileRect = { getTargetTile().x * TILE_SIZE, getTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-    // SDL_RenderCopy(renderer, targetTileTexture, nullptr, &targetTileRect);
+    SDL_RenderCopyEx(renderer, ghostTexture, nullptr, &blinkyRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
+
+    SDL_Rect targetTileRect = { getTargetTile().x * TILE_SIZE, getTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    SDL_RenderCopy(renderer, targetTileTexture, nullptr, &targetTileRect);
 
     // SDL_Rect currTileRect = { currTile.x * TILE_SIZE, currTile.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
     // SDL_Color rectColor = getTextureColor();

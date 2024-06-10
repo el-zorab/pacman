@@ -4,9 +4,13 @@
 
 Blinky::Blinky() {}
 
-Entity2D Blinky::getTargetTile() {
+Entity2D Blinky::getChaseTargetTile() {
     Entity2D pacmanCurrTile = Game::getInstance().getPacman().getCurrentTile();
     return pacmanCurrTile;
+}
+
+Entity2D Blinky::getScatterTargetTile() {
+    return { 25, 0 };
 }
 
 SDL_Color Blinky::getTextureColor() {

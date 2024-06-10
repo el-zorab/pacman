@@ -94,10 +94,15 @@ void Pacman::render() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
 
     SDL_Color textColor = { 255, 255, 255, 255 };
-    Game::getInstance().getFontRenderer().renderText(renderer, "X=" + std::to_string(currPos.x / UNITS_PER_TILE), 0, 0,         textColor);
-    Game::getInstance().getFontRenderer().renderText(renderer, "Y=" + std::to_string(currPos.y / UNITS_PER_TILE), 0, TILE_SIZE, textColor);
+    Game::getInstance().renderText("X=" + std::to_string(currPos.x / UNITS_PER_TILE), 0, 0,         textColor);
+    Game::getInstance().renderText("Y=" + std::to_string(currPos.y / UNITS_PER_TILE), 0, TILE_SIZE, textColor);
 
-    SDL_Rect pacmanRect = { currPos.x / UNITS_PER_PIXEL, currPos.y / UNITS_PER_PIXEL, TEXTURE_W, TEXTURE_H };
+    SDL_Rect pacmanRect = {
+        currPos.x / UNITS_PER_PIXEL - TILE_SIZE / 2,
+        currPos.y / UNITS_PER_PIXEL - TILE_SIZE / 2,
+        GameConst::ENTITY_TEXTURE_SIZE,
+        GameConst::ENTITY_TEXTURE_SIZE
+    };
     SDL_Texture *texture = animationIndex ? textureUnoriented : textureOriented;
     SDL_RenderCopyEx(renderer, texture, nullptr, &pacmanRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
     
