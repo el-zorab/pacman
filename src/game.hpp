@@ -48,6 +48,8 @@ private:
     SDL_Renderer *renderer;
     bool gameRunning;
 
+    Entity2D mousePos;
+
     std::unique_ptr<FontRenderer> fontRenderer;
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<TilingManager> tilingManager;

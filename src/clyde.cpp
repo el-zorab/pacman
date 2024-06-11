@@ -2,7 +2,16 @@
 #include "game.hpp"
 #include "gameConst.hpp"
 
+using GameConst::UNITS_PER_TILE;
+
 Clyde::Clyde() {}
+
+Entity2D Clyde::getInitPos() {
+    return {
+        10 * UNITS_PER_TILE,
+        14 * UNITS_PER_TILE
+    };
+}
 
 Entity2D Clyde::getChaseTargetTile() {
     Entity2D pacmanCurrTile = Game::getInstance().getPacman().getCurrentTile();

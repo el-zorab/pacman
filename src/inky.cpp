@@ -2,7 +2,16 @@
 #include "gameConst.hpp"
 #include "inky.hpp"
 
+using GameConst::UNITS_PER_TILE;
+
 Inky::Inky() {}
+
+Entity2D Inky::getInitPos() {
+    return {
+        15 * UNITS_PER_TILE + UNITS_PER_TILE / 2,
+        17 * UNITS_PER_TILE
+    };
+}
 
 Entity2D Inky::getChaseTargetTile() {
     Entity2D pacmanOrientationVector = orientationToVector(Game::getInstance().getPacman().getOrientation());

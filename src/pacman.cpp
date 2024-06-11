@@ -17,11 +17,12 @@ Pacman::Pacman() {
     textureOriented = Game::getInstance().getTextureManager().loadTexture(PACMAN_TEXTURE_ORIENTED_PATH);
     textureUnoriented = Game::getInstance().getTextureManager().loadTexture(PACMAN_TEXTURE_UNORIENTED_PATH);
 
-    currTile.x = 3;
-    currTile.y = 17;
-    orientation = desiredOrientation = Orientation::RIGHT;
+    currTile.x = 13;
+    currTile.y = 20;
+    orientation = desiredOrientation = Orientation::UP;
 
     currPos = currTile * UNITS_PER_TILE;
+    currPos.x += UNITS_PER_TILE / 2;
 
     animationIndex = 0;
     animationTimer = std::make_unique<Timer>();
@@ -92,11 +93,7 @@ void Pacman::update(int deltaTime) {
 
 void Pacman::render() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
-
-    SDL_Color textColor = { 255, 255, 255, 255 };
-    Game::getInstance().renderText("X=" + std::to_string(currPos.x / UNITS_PER_TILE), 0, 0,         textColor);
-    Game::getInstance().renderText("Y=" + std::to_string(currPos.y / UNITS_PER_TILE), 0, TILE_SIZE, textColor);
-
+    
     SDL_Rect pacmanRect = {
         currPos.x / UNITS_PER_PIXEL - TILE_SIZE / 2,
         currPos.y / UNITS_PER_PIXEL - TILE_SIZE / 2,

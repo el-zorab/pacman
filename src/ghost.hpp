@@ -10,16 +10,18 @@ class Ghost {
 
 public:
     enum class State {
-        CHASE, SCATTER, FRIGHTENED
+        CHASE, SCATTER, FRIGHTENED, IN_HOUSE, EXIT_HOUSE
     };
 
     Ghost();
-    void init(Entity2D startTile, Orientation startOrientation, State startState);
+    void init(Orientation orientation, State state);
 
     void update(int deltaTime);
     void render();
 
     Entity2D getCurrentTile();
+
+    void setState(State state);
 
 private:
     SDL_Texture *ghostTexture;
@@ -35,6 +37,7 @@ private:
     Entity2D getTargetTile();
     Orientation getNewOrientation();
 
+    virtual Entity2D getInitPos() = 0;
     virtual Entity2D getChaseTargetTile() = 0;
     virtual Entity2D getScatterTargetTile() = 0;
     virtual SDL_Color getTextureColor() = 0;

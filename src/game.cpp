@@ -12,6 +12,8 @@
 #include "textureManager.hpp"
 #include "tilingManager.hpp"
 
+using GameConst::UNITS_PER_TILE;
+
 Game::Game(_ctr_tag) {}
 
 Game &Game::getInstance() {
@@ -60,10 +62,10 @@ void Game::init(std::string title, int x, int y) {
     ghosts[GhostName::INKY] = std::make_unique<Inky>();
     ghosts[GhostName::CLYDE] = std::make_unique<Clyde>();
 
-    ghosts[GhostName::BLINKY]->init({10, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
-    ghosts[GhostName::PINKY]->init({12, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
-    ghosts[GhostName::INKY]->init({15, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
-    ghosts[GhostName::CLYDE]->init({16, 14}, Orientation::RIGHT, Ghost::State::SCATTER);
+    ghosts[GhostName::BLINKY]->init(Orientation::LEFT, Ghost::State::CHASE);
+    ghosts[GhostName::PINKY]->init(Orientation::UP, Ghost::State::CHASE);
+    ghosts[GhostName::INKY]->init(Orientation::UP, Ghost::State::IN_HOUSE);
+    ghosts[GhostName::CLYDE]->init(Orientation::RIGHT, Ghost::State::CHASE);
 
     frameAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -121,7 +123,6 @@ void Game::handleEvents() {
         if (event.type == SDL_QUIT) {
             stopRunning();
         } else if (event.type == SDL_KEYDOWN) {
-
             switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
                     pacman->setDesiredOrientation(Orientation::LEFT);
@@ -139,7 +140,11 @@ void Game::handleEvents() {
                 case SDLK_s:
                     pacman->setDesiredOrientation(Orientation::DOWN);
                     break;
+                case SDLK_0:
+                    ghosts[GhostName::INKY]->setState(Ghost::State::EXIT_HOUSE);
             }
+        } else if (event.type == SDL_MOUSEMOTION) {
+            SDL_GetMouseState(&mousePos.x, &mousePos.y);
         }
     }
 }
@@ -157,12 +162,16 @@ void Game::update() {
     while (frameAccumulator >= dt_floored && gameRunning) {        
         pacman->update(dt_floored);
         for (auto const &ghost : ghosts) {
+            // if (ghost == ghosts[GhostName::INKY]) {
+                // continue;
+            // }
+
             ghost->update(dt_floored);
             
-            if (ghost->getCurrentTile() == pacman->getCurrentTile()) {
+            // if (ghost->getCurrentTile() == pacman->getCurrentTile()) {
                 // SDL_Log("You died!\n");
                 // stopRunning();
-            }
+            // }
         }
 
         pelletManager->removePellet(pacman->getCurrentTile().x, pacman->getCurrentTile().y);
@@ -176,12 +185,33 @@ void Game::render() {
     SDL_RenderClear(renderer);
     renderBackground();
     tilingManager->renderTiles();
+    SDL_Rect houseWall = {
+        13 * GameConst::TILE_SIZE,
+        15 * GameConst::TILE_SIZE + GameConst::TILE_SIZE / 2 - 3,
+        2 * GameConst::TILE_SIZE,
+        6
+    };
+    SDL_SetRenderDrawColor(renderer, 255, 127, 255, 255);
+    SDL_RenderFillRect(renderer, &houseWall);
     pelletManager->renderPellets();
 
+    pacman->render();
     for (auto const &ghost : ghosts) {
         ghost->render();
     }
-    pacman->render();
+
+    SDL_Rect mouseTileRect = {
+        (mousePos.x - GameConst::BORDER_SIZE) / GameConst::TILE_SIZE * GameConst::TILE_SIZE,
+        (mousePos.y - GameConst::BORDER_SIZE) / GameConst::TILE_SIZE * GameConst::TILE_SIZE,
+        GameConst::TILE_SIZE,
+        GameConst::TILE_SIZE
+    };
+
+    SDL_Color textColor = { 255, 255, 255, 255 };
+    renderText("X=" + std::to_string(mouseTileRect.x / GameConst::TILE_SIZE ), 0, 0, textColor);
+    renderText("Y=" + std::to_string(mouseTileRect.y / GameConst::TILE_SIZE), 0, GameConst::TILE_SIZE, textColor);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, &mouseTileRect);
 
     SDL_RenderPresent(renderer);
 }
