@@ -4,6 +4,7 @@
 #include <memory>
 #include <SDL2/SDL.h>
 #include <string>
+#include <vector>
 
 #include "fontRenderer.hpp"
 #include "ghost.hpp"
@@ -26,6 +27,8 @@ public:
 
     bool isGameRunning();
     void stopRunning();
+
+    Ghost::Mode getCurrentMode();
 
     SDL_Renderer *getRenderer();
 
@@ -68,8 +71,17 @@ private:
 
     std::array<std::unique_ptr<Ghost>, GHOST_COUNT> ghosts; 
 
+    struct ModeDuration {
+        Ghost::Mode mode;
+        int duration;
+    };
+    std::vector<ModeDuration> modes;
+    int currModeIndex;
+    std::unique_ptr<Timer> modeTimer;
+
     double frameAccumulator;
     std::unique_ptr<Timer> frameTimer;
 
     void renderBackground();
+    void renderGhostHouseGate();
 };

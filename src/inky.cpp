@@ -6,11 +6,13 @@ using GameConst::UNITS_PER_TILE;
 
 Inky::Inky() {}
 
-Entity2D Inky::getInitPos() {
-    return {
-        15 * UNITS_PER_TILE + UNITS_PER_TILE / 2,
+void Inky::initChild() {
+    currPos = {
+        11 * UNITS_PER_TILE + UNITS_PER_TILE / 2,
         17 * UNITS_PER_TILE
     };
+    orientation = Orientation::UP;
+    mode = Mode::IN_HOUSE;
 }
 
 Entity2D Inky::getChaseTargetTile() {

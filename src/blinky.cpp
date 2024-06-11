@@ -6,11 +6,12 @@ using GameConst::UNITS_PER_TILE;
 
 Blinky::Blinky() {}
 
-Entity2D Blinky::getInitPos() {
-    return {
+void Blinky::initChild() {
+    currPos = {
         13 * UNITS_PER_TILE + UNITS_PER_TILE / 2,
         14 * UNITS_PER_TILE
     };
+    orientation = Orientation::RIGHT;
 }
 
 Entity2D Blinky::getChaseTargetTile() {

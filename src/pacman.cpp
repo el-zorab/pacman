@@ -45,7 +45,7 @@ void Pacman::update(int deltaTime) {
             currPos.x = GameConst::WARPING_MIN_X;
             currTile.x = currPos.x / UNITS_PER_TILE;
         } else {
-            int deltaUnits = VELOCITY * deltaTime;
+            int deltaUnits = PACMAN_VEL * deltaTime;
             currPos = currPos + orientationVector * deltaUnits;
         }
     // stop if the next tile is solid

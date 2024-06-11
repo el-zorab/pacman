@@ -6,11 +6,13 @@ using GameConst::UNITS_PER_TILE;
 
 Pinky::Pinky() {}
 
-Entity2D Pinky::getInitPos() {
-    return {
-        12 * UNITS_PER_TILE,
-        14 * UNITS_PER_TILE
+void Pinky::initChild() {
+    currPos = {
+        13 * UNITS_PER_TILE + UNITS_PER_TILE / 2,
+        17 * UNITS_PER_TILE
     };
+    orientation = Orientation::DOWN;
+    mode = Mode::IN_HOUSE;
 }
 
 Entity2D Pinky::getChaseTargetTile() {

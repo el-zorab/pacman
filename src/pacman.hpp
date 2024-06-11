@@ -29,7 +29,7 @@ private:
     Entity2D currTile, nextTile;
     Orientation orientation, desiredOrientation;
 
-    const int VELOCITY = GameConst::VELOCITY_TILES_PER_SEC * 80 / 10;
+    const int PACMAN_VEL = GameConst::VELOCITY_TILES_PER_SEC * 80 / 10;
 
     const Uint32 ANIMATION_FRAME_DURATION_MS = 100;
     const int ANIMATION_FRAMES = 2;

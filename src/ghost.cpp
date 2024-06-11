@@ -13,7 +13,7 @@ const int HOUSE_MAX_TILE_Y = 18;
 
 Ghost::Ghost() {}
 
-void Ghost::init(Orientation orientation, State state) {
+void Ghost::init() {
     ghostTexture     = Game::getInstance().getTextureManager().loadTexture("ghost.png");
     targetTileTexture = Game::getInstance().getTextureManager().loadTexture("target_tile.png");
 
@@ -21,28 +21,27 @@ void Ghost::init(Orientation orientation, State state) {
     SDL_SetTextureColorMod(ghostTexture,      textureColor.r, textureColor.g, textureColor.b);
     SDL_SetTextureColorMod(targetTileTexture, textureColor.r, textureColor.g, textureColor.b);
 
-    currPos = getInitPos();
+    initChild();
+    
     currTile = currPos / UNITS_PER_TILE;
-    this->orientation = orientation;
-    this->state = state;
 }
 
 Entity2D Ghost::getTargetTile() {
-    switch (state) {
-        case State::CHASE:
+    switch (mode) {
+        case Mode::CHASE:
             return getChaseTargetTile();
-        case State::SCATTER:
+        case Mode::SCATTER:
             return getScatterTargetTile();
-        case State::EXIT_HOUSE:
+        case Mode::EXIT_HOUSE:
             return EXITING_HOUSE_TILE;
-        case State::FRIGHTENED:
-        case State::IN_HOUSE:
+        case Mode::FRIGHTENED:
+        case Mode::IN_HOUSE:
         default:
             return { 0, 0 };
     }
 }
 
-Orientation Ghost::getNewOrientation() {
+Orientation Ghost::findNewOrientation() {
     int minDistance = 10000000;
 
     Orientation newOrientation;
@@ -84,7 +83,7 @@ void Ghost::update(int deltaTime) {
         currTile.x = currPos.x / UNITS_PER_TILE;
     } else {
         Entity2D orientationVector = orientationToVector(orientation);
-        int deltaUnits = VELOCITY * deltaTime;
+        int deltaUnits = GHOST_VEL * deltaTime;
         currPos = currPos + orientationVector * deltaUnits;
     }
 
@@ -105,20 +104,20 @@ void Ghost::update(int deltaTime) {
                 break;
         }
 
-        if (state == State::IN_HOUSE) {
+        if (mode == Mode::IN_HOUSE) {
             if (currTile.y == HOUSE_MIN_TILE_Y) orientation = Orientation::DOWN;
             else if (currTile.y == HOUSE_MAX_TILE_Y) orientation = Orientation::UP;
-        } else if (state == State::EXIT_HOUSE) {
+        } else if (mode == Mode::EXIT_HOUSE) {
             if (currTile == EXITING_HOUSE_TILE) orientation = Orientation::UP;
             else if (currTile == OUT_OF_HOUSE_TILE) {
-                state = State::CHASE; // get game current state
-                orientation = getNewOrientation();
+                mode = Game::getInstance().getCurrentMode();
+                orientation = findNewOrientation();
             } else {
-                orientation = getNewOrientation();
+                orientation = findNewOrientation();
             }
         } else {
             currPos = currTile * UNITS_PER_TILE;
-            orientation = getNewOrientation();
+            orientation = findNewOrientation();
         }
     }
 }
@@ -135,8 +134,8 @@ void Ghost::render() {
 
     SDL_RenderCopyEx(renderer, ghostTexture, nullptr, &ghostRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
 
-    SDL_Rect targetTileRect = { getTargetTile().x * TILE_SIZE, getTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-    SDL_RenderCopy(renderer, targetTileTexture, nullptr, &targetTileRect);
+    // SDL_Rect targetTileRect = { getTargetTile().x * TILE_SIZE, getTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    // SDL_RenderCopy(renderer, targetTileTexture, nullptr, &targetTileRect);
 
     // SDL_Rect currTileRect = { currTile.x * TILE_SIZE, currTile.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
     // SDL_Color rectColor = getTextureColor();
@@ -150,6 +149,10 @@ Entity2D Ghost::getCurrentTile() {
     return currTile;
 }
 
-void Ghost::setState(State state) {
-    this->state = state;
+bool Ghost::isInGhostHouse() {
+    return mode == Mode::IN_HOUSE || mode == Mode::EXIT_HOUSE;
+}
+
+void Ghost::setMode(Mode mode) {
+    this->mode = mode;
 }

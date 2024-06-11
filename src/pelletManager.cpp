@@ -10,6 +10,7 @@ const std::string PELLET_FILE_PATH = "res/pellets.dat";
 const SDL_Color PELLET_COLOR = { 255, 255, 255, 255 };
 
 PelletManager::PelletManager() {
+    totalPellets = 0;
     std::ifstream pelletFile(PELLET_FILE_PATH);
 
     for (int j = 0; j < GameConst::TILE_ROWS; j++) {
@@ -17,14 +18,25 @@ PelletManager::PelletManager() {
             char c;
             pelletFile >> c;
             pellets[i][j] = static_cast<PelletType>((int) (c - '0'));
+            if (pellets[i][j] != PelletType::NONE) totalPellets++;
         }
     }
 
     pelletFile.close();
 
+    remainingPellets = totalPellets;
+
     energizerBlinkTimer = std::make_unique<Timer>();
     energizerBlinkTimer->start();
     showEnergizers = true;
+}
+
+int PelletManager::getRemainingPellets() {
+    return remainingPellets;
+}
+
+int PelletManager::getEatenPellets() {
+    return totalPellets - remainingPellets;
 }
 
 void PelletManager::renderPellets() {
@@ -64,6 +76,9 @@ void PelletManager::renderPellets() {
 
 void PelletManager::removePellet(int x, int y) {
     if (x >= 0 && y >= 3 && x < GameConst::TILE_COLS && y < GameConst::TILE_ROWS - 2) {
-        pellets[x][y] = PelletType::NONE;
+        if (pellets[x][y] != PelletType::NONE) {
+            pellets[x][y] = PelletType::NONE;
+            remainingPellets--;
+        }
     }
 }

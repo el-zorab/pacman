@@ -9,35 +9,42 @@
 class Ghost {
 
 public:
-    enum class State {
+    enum class Mode {
         CHASE, SCATTER, FRIGHTENED, IN_HOUSE, EXIT_HOUSE
     };
 
     Ghost();
-    void init(Orientation orientation, State state);
+    void init();
 
     void update(int deltaTime);
     void render();
 
     Entity2D getCurrentTile();
+    bool isInGhostHouse();
+    void setMode(Mode mode);
+    
+    void exitHouse();
 
-    void setState(State state);
+protected:
+    Entity2D currPos;
+    Orientation orientation;
+    Mode mode;
 
 private:
     SDL_Texture *ghostTexture;
     SDL_Texture *targetTileTexture;
 
-    Entity2D currPos;
     Entity2D currTile;
-    Orientation orientation;
-    State state;
+    Mode modeAfterExit;
 
-    const int VELOCITY = GameConst::VELOCITY_TILES_PER_SEC * 75 / 10;
+    const int GHOST_VEL = GameConst::VELOCITY_TILES_PER_SEC * 75 / 10;
+
+    virtual void initChild() = 0;
+
+    Orientation findNewOrientation();
 
     Entity2D getTargetTile();
-    Orientation getNewOrientation();
 
-    virtual Entity2D getInitPos() = 0;
     virtual Entity2D getChaseTargetTile() = 0;
     virtual Entity2D getScatterTargetTile() = 0;
     virtual SDL_Color getTextureColor() = 0;

@@ -6,11 +6,13 @@ using GameConst::UNITS_PER_TILE;
 
 Clyde::Clyde() {}
 
-Entity2D Clyde::getInitPos() {
-    return {
-        10 * UNITS_PER_TILE,
-        14 * UNITS_PER_TILE
+void Clyde::initChild() {
+    currPos = {
+        15 * UNITS_PER_TILE + UNITS_PER_TILE / 2,
+        17 * UNITS_PER_TILE
     };
+    orientation = Orientation::UP;
+    mode = Mode::IN_HOUSE;
 }
 
 Entity2D Clyde::getChaseTargetTile() {

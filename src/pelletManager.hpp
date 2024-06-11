@@ -11,6 +11,9 @@ class PelletManager {
 public:
     PelletManager();
 
+    int getEatenPellets();
+    int getRemainingPellets();
+
     void removePellet(int x, int y);
     void renderPellets();
 
@@ -23,6 +26,9 @@ private:
 
     const int PELLET_SIZE = 4;
     const int ENERGIZER_SIZE = GameConst::TILE_SIZE * 3 / 4;
+
+    int remainingPellets;
+    int totalPellets;
 
     std::array<std::array<PelletType, GameConst::TILE_ROWS>, GameConst::TILE_COLS> pellets;
 
