@@ -85,7 +85,7 @@ void Pacman::update(int deltaTime) {
         }
     }
 
-    if (animationTimer->getTicks() > ANIMATION_FRAME_DURATION_MS) {
+    if (animationTimer->getMiliseconds() > ANIMATION_FRAME_DURATION_MS) {
         animationIndex = (animationIndex + 1) % ANIMATION_FRAMES;
         animationTimer->start();
     }

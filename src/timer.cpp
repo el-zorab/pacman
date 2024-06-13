@@ -1,13 +1,34 @@
 #include "timer.hpp"
 
 Timer::Timer() {
-    ticks = 0;
+    ticksAtStart = 0;
+    ticksWhilePaused = 0;
+    paused = false;
 }
 
 void Timer::start() {
-    ticks = SDL_GetTicks();
+    ticksAtStart = SDL_GetTicks();
+    ticksWhilePaused = 0;
+    paused = false;
 }
 
-Uint32 Timer::getTicks() {
-    return SDL_GetTicks() - ticks;
+void Timer::pause() {
+    if (!paused) {
+        paused = true;
+
+        ticksWhilePaused = SDL_GetTicks() - ticksAtStart;
+    }
+}
+
+void Timer::unpause() {
+    if (paused) {
+        paused = false;
+
+        ticksAtStart = SDL_GetTicks() - ticksWhilePaused;
+    }
+}
+
+int Timer::getMiliseconds() {
+    if (paused) return ticksWhilePaused;
+    else return SDL_GetTicks() - ticksAtStart;
 }

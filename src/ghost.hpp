@@ -19,11 +19,10 @@ public:
     void update(int deltaTime);
     void render();
 
+    bool exitedHouse();
     Entity2D getCurrentTile();
-    bool isInGhostHouse();
+    bool isInHouse();
     void setMode(Mode mode);
-    
-    void exitHouse();
 
 protected:
     Entity2D currPos;

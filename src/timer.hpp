@@ -8,9 +8,13 @@ public:
     Timer();
 
     void start();
-    Uint32 getTicks();
+    void pause();
+    void unpause();
+
+    int getMiliseconds();
 
 private:
-    Uint32 ticks;
-    
+    int ticksAtStart;
+    int ticksWhilePaused;
+    bool paused;
 };

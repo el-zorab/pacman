@@ -140,12 +140,12 @@ void Game::handleEvents() {
         } else if (event.type == SDL_KEYDOWN) {
             switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
+                case SDLK_a:
                     pacman->setDesiredOrientation(Orientation::LEFT);
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
                     pacman->setDesiredOrientation(Orientation::RIGHT);
-                case SDLK_a:
                     break;
                 case SDLK_UP:
                 case SDLK_w:
@@ -155,6 +155,12 @@ void Game::handleEvents() {
                 case SDLK_s:
                     pacman->setDesiredOrientation(Orientation::DOWN);
                     break;
+                case SDLK_1:
+                    modeTimer->pause();
+                    break;
+                case SDLK_2:
+                    modeTimer->unpause();
+                    break;
             }
         } else if (event.type == SDL_MOUSEMOTION) {
             SDL_GetMouseState(&mousePos.x, &mousePos.y);
@@ -163,7 +169,7 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    Uint32 frameTime = frameTimer->getTicks();
+    Uint32 frameTime = frameTimer->getMiliseconds();
     frameTimer->start();
 
     frameAccumulator += frameTime;
@@ -175,7 +181,7 @@ void Game::update() {
     while (frameAccumulator >= dt_floored && gameRunning) {        
         pacman->update(dt_floored);
 
-        bool modeChange = static_cast<int>(modeTimer->getTicks()) > modes[currModeIndex].duration && modes[currModeIndex].duration > 0;
+        bool modeChange = static_cast<int>(modeTimer->getMiliseconds()) > modes[currModeIndex].duration && modes[currModeIndex].duration > 0;
         if (modeChange) {
             currModeIndex++;
             modeTimer->start();
@@ -184,21 +190,37 @@ void Game::update() {
         for (auto const &ghost : ghosts) {
             ghost->update(dt_floored);
 
-            if (modeChange && !ghost->isInGhostHouse()) {
+            if (modeChange && !ghost->isInHouse()) {
                 ghost->setMode(modes[currModeIndex].mode);
+            }
+
+            if (ghost->exitedHouse()) {
+                ghost->setMode(modes[currModeIndex].mode);
+            }
+
+            if (ghost->getCurrentTile() == pacman->getCurrentTile()) {
+                stopRunning();
             }
         }
 
-        if (ghosts[GhostName::PINKY]->isInGhostHouse()) {
+        if (ghosts[GhostName::PINKY]->isInHouse()) {
             ghosts[GhostName::PINKY]->setMode(Ghost::Mode::EXIT_HOUSE);
         }
 
-        if (pelletManager->getEatenPellets() > 30 && ghosts[GhostName::INKY]->isInGhostHouse()) {
+        if (pelletManager->getEatenPellets() >= 30 && ghosts[GhostName::INKY]->isInHouse()) {
             ghosts[GhostName::INKY]->setMode(Ghost::Mode::EXIT_HOUSE);
         }
 
-        if (pelletManager->getEatenPellets() > 60 && ghosts[GhostName::CLYDE]->isInGhostHouse()) {
+        if (pelletManager->getEatenPellets() >= 60 && ghosts[GhostName::CLYDE]->isInHouse()) {
             ghosts[GhostName::CLYDE]->setMode(Ghost::Mode::EXIT_HOUSE);
+        }
+
+        PelletType currPelletType = pelletManager->getPelletType(pacman->getCurrentTile().x, pacman->getCurrentTile().y);
+        if (currPelletType != PelletType::NONE) {
+            if (currPelletType == PelletType::ENERGIZER) {
+                SDL_Log("FRIGHTENED\n");
+            }
+            pelletManager->removePellet(pacman->getCurrentTile().x, pacman->getCurrentTile().y);
         }
 
         pelletManager->removePellet(pacman->getCurrentTile().x, pacman->getCurrentTile().y);
@@ -227,7 +249,7 @@ void Game::render() {
         GameConst::TILE_SIZE
     };
 
-    // SDL_Color textColor = { 255, 255, 255, 255 };
+    SDL_Color textColor = { 255, 255, 255, 255 };
     // renderText("X=" + std::to_string(mouseTileRect.x / GameConst::TILE_SIZE ), 0, 0, textColor);
     // renderText("Y=" + std::to_string(mouseTileRect.y / GameConst::TILE_SIZE), 0, GameConst::TILE_SIZE, textColor);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -246,8 +268,9 @@ void Game::render() {
             break;
     }
 
-    // renderText("MODE_INDEX=" + modeStr + " [" + std::to_string(modeTimer->getTicks()) + "]", 0, 2 * GameConst::TILE_SIZE, textColor);
-    // renderText("EAT_PELL=" + std::to_string(pelletManager->getEatenPellets()), 0, 3 * GameConst::TILE_SIZE, textColor);
+    renderText("MODE_INDEX=" + modeStr + " [" + std::to_string(modeTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, textColor);
+    // SDL_Log("%s\n", std::to_string(modeTimer->getMiliseconds()).c_str());
+    renderText("EAT_PELL=" + std::to_string(pelletManager->getEatenPellets()), 0, 3 * GameConst::TILE_SIZE, textColor);
 
     SDL_RenderPresent(renderer);
 }

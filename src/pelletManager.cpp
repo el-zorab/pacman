@@ -31,16 +31,20 @@ PelletManager::PelletManager() {
     showEnergizers = true;
 }
 
-int PelletManager::getRemainingPellets() {
-    return remainingPellets;
-}
-
 int PelletManager::getEatenPellets() {
     return totalPellets - remainingPellets;
 }
 
+int PelletManager::getRemainingPellets() {
+    return remainingPellets;
+}
+
+PelletType PelletManager::getPelletType(int x, int y) {
+    return pellets[x][y];
+}
+
 void PelletManager::renderPellets() {
-    if (energizerBlinkTimer->getTicks() >= ENERGIZER_BLINK_INTERVAL_MS) {
+    if (energizerBlinkTimer->getMiliseconds() >= ENERGIZER_BLINK_INTERVAL_MS) {
         showEnergizers = !showEnergizers;
         energizerBlinkTimer->start();
     }

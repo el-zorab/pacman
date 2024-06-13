@@ -31,7 +31,7 @@ private:
 
     const int PACMAN_VEL = GameConst::VELOCITY_TILES_PER_SEC * 80 / 10;
 
-    const Uint32 ANIMATION_FRAME_DURATION_MS = 100;
+    const int ANIMATION_FRAME_DURATION_MS = 100;
     const int ANIMATION_FRAMES = 2;
     int animationIndex;
     std::unique_ptr<Timer> animationTimer;

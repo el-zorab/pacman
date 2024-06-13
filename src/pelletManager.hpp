@@ -6,6 +6,12 @@
 #include "gameConst.hpp"
 #include "timer.hpp"
 
+enum class PelletType : int {
+    NONE = 0,
+    PELLET = 1,
+    ENERGIZER = 2
+};
+
 class PelletManager {
 
 public:
@@ -13,17 +19,11 @@ public:
 
     int getEatenPellets();
     int getRemainingPellets();
-
+    PelletType getPelletType(int x, int y);
     void removePellet(int x, int y);
     void renderPellets();
 
 private:
-    enum class PelletType : int {
-        NONE = 0,
-        PELLET = 1,
-        ENERGIZER = 2
-    };
-
     const int PELLET_SIZE = 4;
     const int ENERGIZER_SIZE = GameConst::TILE_SIZE * 3 / 4;
 
@@ -33,6 +33,6 @@ private:
     std::array<std::array<PelletType, GameConst::TILE_ROWS>, GameConst::TILE_COLS> pellets;
 
     std::unique_ptr<Timer> energizerBlinkTimer;
-    const Uint32 ENERGIZER_BLINK_INTERVAL_MS = 500;
+    const int ENERGIZER_BLINK_INTERVAL_MS = 500;
     bool showEnergizers;
 };

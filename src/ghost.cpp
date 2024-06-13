@@ -5,8 +5,8 @@
 
 using GameConst::TILE_SIZE, GameConst::UNITS_PER_PIXEL, GameConst::UNITS_PER_TILE;
 
-const Entity2D EXITING_HOUSE_TILE = { 13, 16 };
-const Entity2D OUT_OF_HOUSE_TILE  = { 13, 14 };
+const Entity2D EXIT_HOUSE_TILE   = { 13, 16 };
+const Entity2D OUT_OF_HOUSE_TILE = { 13, 14 };
 
 const int HOUSE_MIN_TILE_Y = 16;
 const int HOUSE_MAX_TILE_Y = 18;
@@ -33,7 +33,7 @@ Entity2D Ghost::getTargetTile() {
         case Mode::SCATTER:
             return getScatterTargetTile();
         case Mode::EXIT_HOUSE:
-            return EXITING_HOUSE_TILE;
+            return EXIT_HOUSE_TILE;
         case Mode::FRIGHTENED:
         case Mode::IN_HOUSE:
         default:
@@ -108,9 +108,8 @@ void Ghost::update(int deltaTime) {
             if (currTile.y == HOUSE_MIN_TILE_Y) orientation = Orientation::DOWN;
             else if (currTile.y == HOUSE_MAX_TILE_Y) orientation = Orientation::UP;
         } else if (mode == Mode::EXIT_HOUSE) {
-            if (currTile == EXITING_HOUSE_TILE) orientation = Orientation::UP;
+            if (currTile == EXIT_HOUSE_TILE) orientation = Orientation::UP;
             else if (currTile == OUT_OF_HOUSE_TILE) {
-                mode = Game::getInstance().getCurrentMode();
                 orientation = findNewOrientation();
             } else {
                 orientation = findNewOrientation();
@@ -145,11 +144,15 @@ void Ghost::render() {
     // SDL_RenderDrawRect(renderer, &ghostRect);
 }
 
+bool Ghost::exitedHouse() {
+    return mode == Mode::EXIT_HOUSE && currTile == OUT_OF_HOUSE_TILE;
+}
+
 Entity2D Ghost::getCurrentTile() {
     return currTile;
 }
 
-bool Ghost::isInGhostHouse() {
+bool Ghost::isInHouse() {
     return mode == Mode::IN_HOUSE || mode == Mode::EXIT_HOUSE;
 }
 
