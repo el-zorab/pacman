@@ -5,43 +5,21 @@
 
 using GameConst::TILE_SIZE, GameConst::UNITS_PER_PIXEL, GameConst::UNITS_PER_TILE;
 
-const Entity2D EXIT_HOUSE_TILE   = { 13, 16 };
-const Entity2D OUT_OF_HOUSE_TILE = { 13, 14 };
-
-const int HOUSE_MIN_TILE_Y = 16;
-const int HOUSE_MAX_TILE_Y = 18;
-
 Ghost::Ghost() {}
 
 void Ghost::init() {
-    ghostTexture     = Game::getInstance().getTextureManager().loadTexture("ghost.png");
+    ghostTexture      = Game::getInstance().getTextureManager().loadTexture("ghost.png");
     targetTileTexture = Game::getInstance().getTextureManager().loadTexture("target_tile.png");
 
-    SDL_Color textureColor = getTextureColor();
-    SDL_SetTextureColorMod(ghostTexture,      textureColor.r, textureColor.g, textureColor.b);
-    SDL_SetTextureColorMod(targetTileTexture, textureColor.r, textureColor.g, textureColor.b);
-
     initChild();
+
+    SDL_SetTextureColorMod(ghostTexture,      ghostColor.r, ghostColor.g, ghostColor.b);
+    SDL_SetTextureColorMod(targetTileTexture, ghostColor.r, ghostColor.g, ghostColor.b);
     
     currTile = currPos / UNITS_PER_TILE;
 }
 
-Entity2D Ghost::getTargetTile() {
-    switch (mode) {
-        case Mode::CHASE:
-            return getChaseTargetTile();
-        case Mode::SCATTER:
-            return getScatterTargetTile();
-        case Mode::EXIT_HOUSE:
-            return EXIT_HOUSE_TILE;
-        case Mode::FRIGHTENED:
-        case Mode::IN_HOUSE:
-        default:
-            return { 0, 0 };
-    }
-}
-
-Orientation Ghost::findNewOrientation() {
+Orientation Ghost::computeOrientationToTile(Entity2D targetTile) {
     int minDistance = 10000000;
 
     Orientation newOrientation;
@@ -53,16 +31,13 @@ Orientation Ghost::findNewOrientation() {
         }
 
         Entity2D orientationCandidateVector = orientationToVector(orientationCandidate);
-        Entity2D nextTile = {
-            currTile.x + orientationCandidateVector.x,
-            currTile.y + orientationCandidateVector.y
-        };
+        Entity2D nextTile = currTile + orientationCandidateVector;
 
         if (Game::getInstance().getTilingManager().getTileState(nextTile.x, nextTile.y) == TileState::SOLID) {
             continue;
         }
 
-        Entity2D distVector = nextTile - getTargetTile();
+        Entity2D distVector = nextTile - targetTile;
         int distance = distVector.x * distVector.x + distVector.y * distVector.y;
 
         if (distance < minDistance) {
@@ -83,7 +58,8 @@ void Ghost::update(int deltaTime) {
         currTile.x = currPos.x / UNITS_PER_TILE;
     } else {
         Entity2D orientationVector = orientationToVector(orientation);
-        int deltaUnits = GHOST_VEL * deltaTime;
+        int velocity = mode == Mode::FRIGHTENED ? GHOST_VEL_FRIGHTENED : GHOST_VEL;
+        int deltaUnits = velocity * deltaTime;
         currPos = currPos + orientationVector * deltaUnits;
     }
 
@@ -104,19 +80,92 @@ void Ghost::update(int deltaTime) {
                 break;
         }
 
-        if (mode == Mode::IN_HOUSE) {
-            if (currTile.y == HOUSE_MIN_TILE_Y) orientation = Orientation::DOWN;
-            else if (currTile.y == HOUSE_MAX_TILE_Y) orientation = Orientation::UP;
-        } else if (mode == Mode::EXIT_HOUSE) {
-            if (currTile == EXIT_HOUSE_TILE) orientation = Orientation::UP;
-            else if (currTile == OUT_OF_HOUSE_TILE) {
-                orientation = findNewOrientation();
-            } else {
-                orientation = findNewOrientation();
+        if (state == State::RESPAWNED) {
+            state = State::WANDERING;
+        }
+
+        if (state == State::WANDERING) {
+            if (currTile.y == HOUSE_MIN_TILE_Y) {
+                orientation = Orientation::DOWN;
+            } else if (currTile.y == HOUSE_MAX_TILE_Y) {
+                orientation = Orientation::UP;
             }
-        } else {
+        }
+        
+        if (state == State::EXITING_HOUSE) {
+            if (currTile == INSIDE_HOUSE_TILE) {
+                orientation = Orientation::UP;
+            } else if (currTile == OUTSIDE_HOUSE_TILE) {
+                state = State::NORMAL_OPERATION;
+            } else if (currTile.y > OUTSIDE_HOUSE_TILE.y) {
+                orientation = computeOrientationToTile(INSIDE_HOUSE_TILE);
+            }
+        }
+
+        if (state == State::EATEN) {
+            if (currTile == OUTSIDE_HOUSE_TILE) {
+                orientation = Orientation::DOWN;
+                state = State::ENTERING_HOUSE;
+            } else {
+                orientation = computeOrientationToTile(OUTSIDE_HOUSE_TILE);
+            }
+        }
+
+        if (state == State::ENTERING_HOUSE) {
+            if (currTile.y == HOUSE_MIN_TILE_Y) {
+                state = State::RESPAWNED;
+            }
+        }
+
+        if (state == State::NORMAL_OPERATION) {
             currPos = currTile * UNITS_PER_TILE;
-            orientation = findNewOrientation();
+
+            if (mode == Mode::CHASE) {
+                orientation = computeOrientationToTile(getChaseTargetTile());
+            
+            } else if (mode == Mode::SCATTER) {
+                orientation = computeOrientationToTile(scatterTargetTile);
+            
+            } else if (mode == Mode::FRIGHTENED) {
+                int possibleOrientations[4];
+                int possibleOrientationsIndex = 0;
+                for (int i = 0; i < ORIENTATIONS; i++) {
+                    Orientation orientation = static_cast<Orientation>(i);
+                    Entity2D orientationVector = orientationToVector(orientation);
+                    Entity2D nextTile = currTile + orientationVector;
+
+                    if (orientationAreOpposites(this->orientation, orientation)) {
+                        continue;
+                    }
+
+                    if (Game::getInstance().getTilingManager().getTileState(nextTile.x, nextTile.y) == TileState::SOLID) {
+                        continue;
+                    }
+
+                    possibleOrientations[possibleOrientationsIndex++] = i;
+                }
+
+                int randomIndex = rand() % possibleOrientationsIndex;
+                int randomOrientation = possibleOrientations[randomIndex];
+                orientation = static_cast<Orientation>(randomOrientation);
+            
+            }
+        }
+        
+        if (scatterTargetTile.x == 25 && scatterTargetTile.y == 0) {
+            std::string str;
+            if (state == State::NORMAL_OPERATION) {
+                str = "NORMAL_OPERATION";
+            } else if (state == State::WANDERING) {
+                str = "WANDERING";
+            } else if (state == State::EXITING_HOUSE) {
+                str = "EXITING_HOUSE";
+            } else if (state == State::EATEN) {
+                str = "EATEN";
+            } else if (state == State::ENTERING_HOUSE) {
+                str = "ENTERING_HOUSE";
+            }
+            SDL_Log("%s\n", str.c_str());
         }
     }
 }
@@ -144,18 +193,40 @@ void Ghost::render() {
     // SDL_RenderDrawRect(renderer, &ghostRect);
 }
 
-bool Ghost::exitedHouse() {
-    return mode == Mode::EXIT_HOUSE && currTile == OUT_OF_HOUSE_TILE;
-}
-
 Entity2D Ghost::getCurrentTile() {
     return currTile;
 }
 
-bool Ghost::isInHouse() {
-    return mode == Mode::IN_HOUSE || mode == Mode::EXIT_HOUSE;
+bool Ghost::isRespawned() {
+    return state == State::RESPAWNED;
+}
+
+void Ghost::setEaten() {
+    if (state == State::NORMAL_OPERATION) {
+        state = State::EATEN;
+        setGhostColor(GHOST_EATEN_COLOR);
+    }
+}
+
+void Ghost::setExitHouse() {
+    if (state == State::WANDERING) {
+        state = State::EXITING_HOUSE;
+    }
+}
+
+void Ghost::resetGhostColor() {
+    SDL_SetTextureColorMod(ghostTexture, ghostColor.r, ghostColor.g, ghostColor.b);
+}
+
+void Ghost::setGhostColor(SDL_Color color) {
+    SDL_SetTextureColorMod(ghostTexture, color.r, color.g, color.b);
 }
 
 void Ghost::setMode(Mode mode) {
     this->mode = mode;
+    if (mode == Mode::FRIGHTENED) {
+        setGhostColor(GHOST_FRIGHTENED_COLOR);
+    } else {
+        resetGhostColor();
+    }
 }

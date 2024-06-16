@@ -19,12 +19,11 @@ public:
 
     int getEatenPellets();
     int getRemainingPellets();
-    PelletType getPelletType(int x, int y);
-    void removePellet(int x, int y);
+    PelletType removePellet(int x, int y);
     void renderPellets();
 
 private:
-    const int PELLET_SIZE = 4;
+    const int PELLET_SIZE = 6;
     const int ENERGIZER_SIZE = GameConst::TILE_SIZE * 3 / 4;
 
     int remainingPellets;

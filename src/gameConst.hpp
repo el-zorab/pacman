@@ -3,7 +3,7 @@
 namespace GameConst {
 
     static const int BORDER_SIZE = 32;
-    static const int TILE_SIZE = 20;
+    static const int TILE_SIZE = 32;
 
     static const int TILE_ROWS = 36;
     static const int TILE_COLS = 28;
@@ -20,9 +20,8 @@ namespace GameConst {
     static const int ENTITY_TEXTURE_SIZE = 2 * TILE_SIZE;
 
     static const int WARPING_TILE_ROW = 17;
-    static const int WARPING_MIN_X = -ENTITY_TEXTURE_SIZE * UNITS_PER_PIXEL;
-    static const int WARPING_MAX_X = (TILE_COLS - 1) * UNITS_PER_TILE + ENTITY_TEXTURE_SIZE * UNITS_PER_PIXEL;
+    static const int WARPING_MIN_X = UNITS_PER_TILE * -1        + UNITS_PER_TILE / 2;
+    static const int WARPING_MAX_X = UNITS_PER_TILE * TILE_COLS + UNITS_PER_TILE / 2;
 
     static const int VELOCITY_TILES_PER_SEC = UNITS_PER_TILE / 1000;
-    
 }

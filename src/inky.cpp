@@ -12,7 +12,12 @@ void Inky::initChild() {
         17 * UNITS_PER_TILE
     };
     orientation = Orientation::UP;
-    mode = Mode::IN_HOUSE;
+
+    state = State::WANDERING;
+
+    scatterTargetTile = { 27, 34 };
+
+    ghostColor = { 0, 255, 255, 255 };
 }
 
 Entity2D Inky::getChaseTargetTile() {
@@ -22,11 +27,3 @@ Entity2D Inky::getChaseTargetTile() {
     Entity2D inkyTargetTile = (pacmanCurrTile + pacmanOrientationVector * 2) * 2 - blinkyCurrentTile;
     return inkyTargetTile;
 }
-
-Entity2D Inky::getScatterTargetTile() {
-    return { 27, 34 };
-}
-
-SDL_Color Inky::getTextureColor() {
-    return { 0, 255, 255, 255 };
-};

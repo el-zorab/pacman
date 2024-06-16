@@ -12,7 +12,12 @@ void Clyde::initChild() {
         17 * UNITS_PER_TILE
     };
     orientation = Orientation::UP;
-    mode = Mode::IN_HOUSE;
+
+    state = State::WANDERING;
+
+    scatterTargetTile = { 0, 34 };
+
+    ghostColor = { 255, 127, 0, 255 };
 }
 
 Entity2D Clyde::getChaseTargetTile() {
@@ -25,12 +30,3 @@ Entity2D Clyde::getChaseTargetTile() {
         return { 0, 34 };
     }
 }
-
-Entity2D Clyde::getScatterTargetTile() {
-    return { 0, 34 };
-}
-
-SDL_Color Clyde::getTextureColor() {
-    return { 255, 127, 0, 255 };
-};
-

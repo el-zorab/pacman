@@ -39,8 +39,16 @@ int PelletManager::getRemainingPellets() {
     return remainingPellets;
 }
 
-PelletType PelletManager::getPelletType(int x, int y) {
-    return pellets[x][y];
+PelletType PelletManager::removePellet(int x, int y) {
+    PelletType ret = PelletType::NONE;
+    if (x >= 0 && y >= 3 && x < GameConst::TILE_COLS && y < GameConst::TILE_ROWS - 2) {
+        if (pellets[x][y] != PelletType::NONE) {
+            ret = pellets[x][y];
+            pellets[x][y] = PelletType::NONE;
+            remainingPellets--;
+        }
+    }
+    return ret;
 }
 
 void PelletManager::renderPellets() {
@@ -74,15 +82,6 @@ void PelletManager::renderPellets() {
             }
 
             SDL_RenderFillRect(renderer, &pelletRect);
-        }
-    }
-}
-
-void PelletManager::removePellet(int x, int y) {
-    if (x >= 0 && y >= 3 && x < GameConst::TILE_COLS && y < GameConst::TILE_ROWS - 2) {
-        if (pellets[x][y] != PelletType::NONE) {
-            pellets[x][y] = PelletType::NONE;
-            remainingPellets--;
         }
     }
 }

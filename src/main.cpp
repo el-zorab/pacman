@@ -9,6 +9,8 @@
 int main(int argc, char* argv[]) {
     (void) argc; (void) argv;
 
+    srand(time(nullptr));
+
     Game &game = Game::getInstance();
 
     game.init("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);

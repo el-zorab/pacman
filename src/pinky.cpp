@@ -12,7 +12,12 @@ void Pinky::initChild() {
         17 * UNITS_PER_TILE
     };
     orientation = Orientation::DOWN;
-    mode = Mode::IN_HOUSE;
+
+    state = State::WANDERING;
+
+    scatterTargetTile = { 2, 0 };
+
+    ghostColor = { 255, 0, 255, 255 };
 }
 
 Entity2D Pinky::getChaseTargetTile() {
@@ -21,11 +26,3 @@ Entity2D Pinky::getChaseTargetTile() {
     Entity2D pinkyTargetTile = pacmanCurrTile + pacmanOrientationVector * 4;
     return pinkyTargetTile;
 }
-
-Entity2D Pinky::getScatterTargetTile() {
-    return { 2, 0 };
-}
-
-SDL_Color Pinky::getTextureColor() {
-    return { 255, 0, 255, 255 };
-};

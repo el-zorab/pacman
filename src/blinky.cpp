@@ -12,17 +12,15 @@ void Blinky::initChild() {
         14 * UNITS_PER_TILE
     };
     orientation = Orientation::RIGHT;
+
+    state = State::NORMAL_OPERATION;
+
+    scatterTargetTile = { 25, 0 };
+
+    ghostColor = { 255, 0, 0, 255 };
 }
 
 Entity2D Blinky::getChaseTargetTile() {
     Entity2D pacmanCurrTile = Game::getInstance().getPacman().getCurrentTile();
     return pacmanCurrTile;
 }
-
-Entity2D Blinky::getScatterTargetTile() {
-    return { 25, 0 };
-}
-
-SDL_Color Blinky::getTextureColor() {
-    return { 255, 0, 0, 255 };
-};
