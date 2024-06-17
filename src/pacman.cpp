@@ -24,6 +24,8 @@ Pacman::Pacman() {
     currPos = currTile * UNITS_PER_TILE;
     currPos.x += UNITS_PER_TILE / 2;
 
+    ghostsFrightened = false;
+
     animationIndex = 0;
     animationTimer = std::make_unique<Timer>();
     animationTimer->start();
@@ -45,7 +47,8 @@ void Pacman::update(int deltaTime) {
             currPos.x = GameConst::WARPING_MIN_X;
             currTile.x = currPos.x / UNITS_PER_TILE;
         } else {
-            int deltaUnits = PACMAN_VEL * deltaTime;
+            int velocity = ghostsFrightened ? PACMAN_FRIGHT_VEL : PACMAN_VEL;
+            int deltaUnits = velocity * deltaTime;
             currPos = currPos + orientationVector * deltaUnits;
         }
     // stop if the next tile is solid
@@ -119,3 +122,7 @@ Orientation Pacman::getOrientation() {
 void Pacman::setDesiredOrientation(Orientation desiredOrientation) {
     this->desiredOrientation = desiredOrientation;
 };
+
+void Pacman::setGhostsFrightened(bool ghostsFrightened) {
+    this->ghostsFrightened = ghostsFrightened;
+}

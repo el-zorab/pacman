@@ -51,6 +51,7 @@ private:
     int windowHeight;
     SDL_Renderer *renderer;
     bool gameRunning;
+    int gameScore;
 
     Entity2D mousePos;
 
@@ -67,9 +68,8 @@ private:
     static constexpr SDL_Color TILE_COLOR_A = { 15, 15, 15, 255 };
     static constexpr SDL_Color TILE_COLOR_B = { 25, 25, 25, 255 };
 
-    static constexpr Entity2D GHOST_HOUSE_TILE = { 13, 15 };
-    static constexpr int GHOST_HOUSE_GATE_WIDTH  = 2 * GameConst::TILE_SIZE;
-    static constexpr int GHOST_HOUSE_GATE_HEIGHT = 6;
+    static constexpr int GHOST_HOUSE_HEIGHT = 6;
+    static constexpr SDL_Rect GHOST_HOUSE_GATE_RECT = { 13 * GameConst::TILE_SIZE, 15 * GameConst::TILE_SIZE + GameConst::TILE_SIZE / 2 - GHOST_HOUSE_HEIGHT / 2, 2 * GameConst::TILE_SIZE, GHOST_HOUSE_HEIGHT };
     static constexpr SDL_Color GHOST_HOUSE_GATE_COLOR = { 255, 127, 255, 255 };
 
     static constexpr int EATEN_PELLETS_PINKY_EXIT = 0;
@@ -78,13 +78,9 @@ private:
 
     std::array<int, Ghost::GHOST_COUNT> ghostsExitMinEatenPellets;
 
-    static constexpr int GHOST_FRIGHTENED_MS = 25000;
-    static constexpr int GHOST_START_FLASHING_MS = 4000;
+    static constexpr int GHOST_FRIGHTENED_MS = 6000;
+    static constexpr int GHOST_START_FLASHING_MS = 4500;
     static constexpr int GHOST_FLASHING_INTERVAL_MS = 250;
-
-    static constexpr SDL_Color GHOST_FRIGHTENED_COLOR = { 63, 255, 63, 255 };
-    static constexpr SDL_Color GHOST_FLASH_COLOR = { 255, 63, 63, 255 };
-    static constexpr SDL_Color GHOST_EATEN_COLOR = { 255, 255, 255, 255 };
 
     std::array<std::unique_ptr<Ghost>, Ghost::GHOST_COUNT> ghosts;
 
@@ -94,14 +90,14 @@ private:
     };
 
     std::vector<GhostModeEntry> ghostModes;
-    int currModeIndex;
+    int ghostModeCurr;
     std::unique_ptr<Timer> currModeTimer;
 
     bool ghostsFrightened;
     std::unique_ptr<Timer> ghostsFrightenedTimer;
 
     bool ghostsFlashing;
-    std::unique_ptr<Timer> ghostsFlashTimer;
+    std::unique_ptr<Timer> ghostsFlashingTimer;
 
     double frameTimeAccumulator;
     std::unique_ptr<Timer> frameTimer;

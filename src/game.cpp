@@ -49,8 +49,9 @@ void Game::init(std::string title, int x, int y) {
     SDL_RenderSetViewport(renderer, &rendererViewport);
 
     gameRunning = true;
+    gameScore = 0;
     
-    fontRenderer = std::make_unique<FontRenderer>("jetbrains_mono_regular.ttf", GameConst::TILE_SIZE);
+    fontRenderer = std::make_unique<FontRenderer>("jetbrains_mono_regular.ttf", 2 * GameConst::TILE_SIZE);
     textureManager = std::make_unique<TextureManager>();
     tilingManager = std::make_unique<TilingManager>();
     pelletManager = std::make_unique<PelletManager>();
@@ -79,7 +80,7 @@ void Game::init(std::string title, int x, int y) {
     ghostModes.push_back({ Ghost::Mode::SCATTER, 5000 });
     ghostModes.push_back({ Ghost::Mode::CHASE,   -1 });
     
-    currModeIndex = 0;
+    ghostModeCurr = 0;
     currModeTimer = std::make_unique<Timer>();
     currModeTimer->start();
 
@@ -90,8 +91,9 @@ void Game::init(std::string title, int x, int y) {
     ghostsFrightened = false;
     ghostsFrightenedTimer = std::make_unique<Timer>();
 
-    ghostsFlashTimer = std::make_unique<Timer>();
-    ghostsFlashing = false;
+    ghostsFlashing = true;
+    ghostsFlashingTimer = std::make_unique<Timer>();
+    ghostsFlashingTimer->start();
 
     frameTimeAccumulator = 0.0;
     frameTimer = std::make_unique<Timer>();
@@ -195,16 +197,20 @@ void Game::updatePhysicsFrame(int const deltaTime) {
     PelletType eatenPelletType = pelletManager->removePellet(pacman->getCurrentTile().x, pacman->getCurrentTile().y);
     if (eatenPelletType != PelletType::NONE) {
         if (eatenPelletType == PelletType::ENERGIZER) {
-            if (ghostsFrightened) {
-                ghostsFlashing = false;
-            }
+            ghostsFlashing = !ghostsFrightened;
             ghostsFrightened = true;
             ghostsFrightenedTimer->start();
+            ghostsFlashingTimer->start();
             currModeTimer->pause();
+            pacman->setGhostsFrightened(true);
 
             for (auto const &ghost : ghosts) {
                 ghost->setMode(Ghost::Mode::FRIGHTENED);
             }
+
+            gameScore += 50;
+        } else if (eatenPelletType == PelletType::PELLET) {
+            gameScore += 10;
         }
     }
 
@@ -212,41 +218,33 @@ void Game::updatePhysicsFrame(int const deltaTime) {
         ghostsFrightened = false;
         ghostsFlashing = false;
         currModeTimer->unpause();
+        pacman->setGhostsFrightened(false);
 
         for (auto const &ghost : ghosts) {
-            ghost->setMode(ghostModes[currModeIndex].mode);
+            ghost->setMode(ghostModes[ghostModeCurr].mode);
         }
     }
 
-    if (ghostsFrightened && !ghostsFlashing && ghostsFrightenedTimer->getMiliseconds() > GHOST_START_FLASHING_MS) {
-        ghostsFlashing = true;
-        ghostsFlashTimer->start();
-    }
-
-    if (ghostsFlashing) {
-        if (ghostsFlashTimer->getMiliseconds() < GHOST_FLASHING_INTERVAL_MS) {
-            for (auto const &ghost : ghosts) {
-                // if (!ghost->isEaten()) {
-                    ghost->setGhostColor(GHOST_FLASH_COLOR);
-                // }
+    if (ghostsFrightened && ghostsFlashing && ghostsFrightenedTimer->getMiliseconds() > GHOST_START_FLASHING_MS) {
+        for (auto const &ghost : ghosts) {
+            if (ghost->isFrightened() && !ghost->isEaten()) {
+                if (ghostsFlashingTimer->getMiliseconds() < GHOST_FLASHING_INTERVAL_MS) {
+                    ghost->setGhostFlashColor();
+                } else if (ghostsFlashingTimer->getMiliseconds() < 2 * GHOST_FLASHING_INTERVAL_MS) {
+                    ghost->setGhostFrightenedColor();
+                } else {
+                    ghostsFlashingTimer->start();
+                }
             }
-        } else if (ghostsFlashTimer->getMiliseconds() < 2 * GHOST_FLASHING_INTERVAL_MS) {
-            for (auto const &ghost : ghosts) {
-                // if (!ghost->isEaten()) {
-                    ghost->setGhostColor(GHOST_FRIGHTENED_COLOR);
-                // }
-            }
-        } else {
-            ghostsFlashTimer->start();
         }
     }
 
-    if (currModeTimer->getMiliseconds() > ghostModes[currModeIndex].duration && ghostModes[currModeIndex].duration > 0) {
-        currModeIndex++;
+    if (currModeTimer->getMiliseconds() > ghostModes[ghostModeCurr].duration && ghostModes[ghostModeCurr].duration > 0) {
+        ghostModeCurr++;
         currModeTimer->start();
 
         for (auto const &ghost : ghosts) {
-            ghost->setMode(ghostModes[currModeIndex].mode);
+            ghost->setMode(ghostModes[ghostModeCurr].mode);
         }
     };
 
@@ -261,17 +259,22 @@ void Game::updatePhysicsFrame(int const deltaTime) {
         ghost->update(deltaTime);
 
         if (ghost->getCurrentTile() == pacman->getCurrentTile()) {
-            if (ghostsFrightened) {
+            if (ghost->isFrightened()) {
                 ghost->setEaten();
             } else {
                 stopRunning();
+                SDL_Log("You died!\n");
             }
         }
 
         if (ghost->isRespawned()) {
-            ghost->resetGhostColor();
-            ghost->setMode(ghostModes[currModeIndex].mode); // ???
+            ghost->setMode(ghostModes[ghostModeCurr].mode);
         }
+    }
+
+    if (pelletManager->getRemainingPellets() == 0) {
+        stopRunning();
+        SDL_Log("You win!\n");
     }
 }
 
@@ -300,14 +303,16 @@ void Game::render() {
     // renderText("X=" + std::to_string(mouseTileRect.x / GameConst::TILE_SIZE), 0, 0, TEXT_COLOR);
     // renderText("Y=" + std::to_string(mouseTileRect.y / GameConst::TILE_SIZE), 0, GameConst::TILE_SIZE, TEXT_COLOR);
 
-    if (ghostsFrightened) {
-        renderText("MODE_INDEX=FRIGHTENED [" + std::to_string(ghostsFrightenedTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, GHOST_FRIGHTENED_COLOR);
-    } else if (ghostModes[currModeIndex].mode == Ghost::Mode::CHASE) {
-        renderText("MODE_INDEX=CHASE [" + std::to_string(currModeTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {255, 127, 127, 255});
-    } else if (ghostModes[currModeIndex].mode == Ghost::Mode::SCATTER) {
-        renderText("MODE_INDEX=SCATTER [" + std::to_string(currModeTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {127, 127, 255, 255});
-    }
-    renderText("EAT_PELL=" + std::to_string(pelletManager->getEatenPellets()), 0, 3 * GameConst::TILE_SIZE, {255, 255, 255, 255});
+    // if (ghostsFrightened) {
+    //     renderText("MODE_INDEX=FRIGHTENED [" + std::to_string(ghostsFrightenedTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {127, 255, 127, 255});
+    // } else if (ghostModes[ghostModeCurr].mode == Ghost::Mode::CHASE) {
+    //     renderText("MODE_INDEX=CHASE [" + std::to_string(currModeTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {255, 127, 127, 255});
+    // } else if (ghostModes[ghostModeCurr].mode == Ghost::Mode::SCATTER) {
+    //     renderText("MODE_INDEX=SCATTER [" + std::to_string(currModeTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {127, 127, 255, 255});
+    // }
+    // renderText("EAT_PELL=" + std::to_string(pelletManager->getEatenPellets()), 0, 3 * GameConst::TILE_SIZE, {255, 255, 255, 255});
+
+    renderText("SCORE: " + std::to_string(gameScore), 0, GameConst::TILE_SIZE, {255, 255, 255, 255});
 
     SDL_RenderPresent(renderer);
 }
@@ -330,12 +335,6 @@ void Game::renderBackground() {
 }
 
 void Game::renderGhostHouseGate() {
-    SDL_Rect ghostHouseGateRect = {
-        GHOST_HOUSE_TILE.x * GameConst::TILE_SIZE,
-        GHOST_HOUSE_TILE.y * GameConst::TILE_SIZE + GameConst::TILE_SIZE / 2 - GHOST_HOUSE_GATE_HEIGHT / 2,
-        GHOST_HOUSE_GATE_WIDTH,
-        GHOST_HOUSE_GATE_HEIGHT
-    };
     SDL_SetRenderDrawColor(renderer, GHOST_HOUSE_GATE_COLOR.r, GHOST_HOUSE_GATE_COLOR.g, GHOST_HOUSE_GATE_COLOR.b, GHOST_HOUSE_GATE_COLOR.a);
-    SDL_RenderFillRect(renderer, &ghostHouseGateRect);
+    SDL_RenderFillRect(renderer, &GHOST_HOUSE_GATE_RECT);
 }

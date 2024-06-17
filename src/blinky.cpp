@@ -17,7 +17,7 @@ void Blinky::initChild() {
 
     scatterTargetTile = { 25, 0 };
 
-    ghostColor = { 255, 0, 0, 255 };
+    ghostColor = { 255, 31, 31, 255 };
 }
 
 Entity2D Blinky::getChaseTargetTile() {

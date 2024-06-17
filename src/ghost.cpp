@@ -9,14 +9,19 @@ Ghost::Ghost() {}
 
 void Ghost::init() {
     ghostTexture      = Game::getInstance().getTextureManager().loadTexture("ghost.png");
+    ghostEatenTexture = Game::getInstance().getTextureManager().loadTexture("ghost_eaten.png");
     targetTileTexture = Game::getInstance().getTextureManager().loadTexture("target_tile.png");
 
     initChild();
 
     SDL_SetTextureColorMod(ghostTexture,      ghostColor.r, ghostColor.g, ghostColor.b);
+    SDL_SetTextureColorMod(ghostEatenTexture, GHOST_FRIGHTENED_COLOR.r, GHOST_FRIGHTENED_COLOR.g, GHOST_FRIGHTENED_COLOR.b);
     SDL_SetTextureColorMod(targetTileTexture, ghostColor.r, ghostColor.g, ghostColor.b);
     
     currTile = currPos / UNITS_PER_TILE;
+    mode = Ghost::Mode::SCATTER;
+
+    reverseOrientation = false;
 }
 
 Orientation Ghost::computeOrientationToTile(Entity2D targetTile) {
@@ -58,7 +63,7 @@ void Ghost::update(int deltaTime) {
         currTile.x = currPos.x / UNITS_PER_TILE;
     } else {
         Entity2D orientationVector = orientationToVector(orientation);
-        int velocity = mode == Mode::FRIGHTENED ? GHOST_VEL_FRIGHTENED : GHOST_VEL;
+        int velocity = mode == Mode::FRIGHTENED && state != State::EATEN ? GHOST_VEL_FRIGHTENED : GHOST_VEL;
         int deltaUnits = velocity * deltaTime;
         currPos = currPos + orientationVector * deltaUnits;
     }
@@ -82,6 +87,7 @@ void Ghost::update(int deltaTime) {
 
         if (state == State::RESPAWNED) {
             state = State::WANDERING;
+            setGhostColor(ghostColor);
         }
 
         if (state == State::WANDERING) {
@@ -120,7 +126,19 @@ void Ghost::update(int deltaTime) {
         if (state == State::NORMAL_OPERATION) {
             currPos = currTile * UNITS_PER_TILE;
 
-            if (mode == Mode::CHASE) {
+            if (reverseOrientation) {
+                Orientation orientation;
+                for (int i = 0; i < ORIENTATIONS; i++) {
+                    orientation = static_cast<Orientation>(i);
+                    if (orientationAreOpposites(this->orientation, orientation)) {
+                        this->orientation = orientation;
+                        break;
+                    }
+                }
+                reverseOrientation = false;
+            }
+
+            else if (mode == Mode::CHASE) {
                 orientation = computeOrientationToTile(getChaseTargetTile());
             
             } else if (mode == Mode::SCATTER) {
@@ -165,24 +183,22 @@ void Ghost::update(int deltaTime) {
             } else if (state == State::ENTERING_HOUSE) {
                 str = "ENTERING_HOUSE";
             }
-            SDL_Log("%s\n", str.c_str());
         }
     }
 }
 
 void Ghost::render() {
     SDL_Renderer *renderer = Game::getInstance().getRenderer();
-
     SDL_Rect ghostRect = {
         currPos.x / UNITS_PER_PIXEL - TILE_SIZE / 2,
         currPos.y / UNITS_PER_PIXEL - TILE_SIZE / 2,
         GameConst::ENTITY_TEXTURE_SIZE,
         GameConst::ENTITY_TEXTURE_SIZE
     };
+    SDL_Texture *textureToRender = state == State::EATEN ? ghostEatenTexture : ghostTexture;
+    SDL_RenderCopy(renderer, textureToRender, nullptr, &ghostRect);
 
-    SDL_RenderCopyEx(renderer, ghostTexture, nullptr, &ghostRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
-
-    // SDL_Rect targetTileRect = { getTargetTile().x * TILE_SIZE, getTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+    // SDL_Rect targetTileRect = { getChaseTargetTile().x * TILE_SIZE, getChaseTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
     // SDL_RenderCopy(renderer, targetTileTexture, nullptr, &targetTileRect);
 
     // SDL_Rect currTileRect = { currTile.x * TILE_SIZE, currTile.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
@@ -197,6 +213,14 @@ Entity2D Ghost::getCurrentTile() {
     return currTile;
 }
 
+bool Ghost::isEaten() {
+    return state == State::EATEN;
+}
+
+bool Ghost::isFrightened() {
+    return mode == Mode::FRIGHTENED;
+}
+
 bool Ghost::isRespawned() {
     return state == State::RESPAWNED;
 }
@@ -204,7 +228,6 @@ bool Ghost::isRespawned() {
 void Ghost::setEaten() {
     if (state == State::NORMAL_OPERATION) {
         state = State::EATEN;
-        setGhostColor(GHOST_EATEN_COLOR);
     }
 }
 
@@ -214,8 +237,12 @@ void Ghost::setExitHouse() {
     }
 }
 
-void Ghost::resetGhostColor() {
-    SDL_SetTextureColorMod(ghostTexture, ghostColor.r, ghostColor.g, ghostColor.b);
+void Ghost::setGhostFlashColor() {
+    setGhostColor(GHOST_FLASH_COLOR);
+}
+
+void Ghost::setGhostFrightenedColor() {
+    setGhostColor(GHOST_FRIGHTENED_COLOR);
 }
 
 void Ghost::setGhostColor(SDL_Color color) {
@@ -223,10 +250,16 @@ void Ghost::setGhostColor(SDL_Color color) {
 }
 
 void Ghost::setMode(Mode mode) {
+    reverseOrientation = this->mode != mode && state == State::NORMAL_OPERATION;
+    
     this->mode = mode;
-    if (mode == Mode::FRIGHTENED) {
-        setGhostColor(GHOST_FRIGHTENED_COLOR);
-    } else {
-        resetGhostColor();
+
+    if (state != State::EATEN) {
+        if (mode == Mode::FRIGHTENED) {
+            setGhostColor(GHOST_FRIGHTENED_COLOR);
+        } else {
+            setGhostColor(ghostColor);
+        
+        }
     }
 }

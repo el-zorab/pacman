@@ -17,7 +17,7 @@ void Pinky::initChild() {
 
     scatterTargetTile = { 2, 0 };
 
-    ghostColor = { 255, 0, 255, 255 };
+    ghostColor = { 255, 31, 255, 255 };
 }
 
 Entity2D Pinky::getChaseTargetTile() {

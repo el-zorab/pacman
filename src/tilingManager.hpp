@@ -18,7 +18,7 @@ public:
     void renderTiles();
 
 private:
-    std::array<std::array<bool, GameConst::TILE_ROWS>, GameConst::TILE_COLS> tiling;
+    std::array<std::array<bool, GameConst::TILE_ROWS>, GameConst::TILE_COLS> solidTile;
 
     SDL_Texture *tilingTexture;
 

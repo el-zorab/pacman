@@ -29,12 +29,14 @@ public:
     void render();
 
     Entity2D getCurrentTile();
+    bool isEaten();
+    bool isFrightened();
     bool isRespawned();
 
     void setEaten();
     void setExitHouse();
-    void resetGhostColor();
-    void setGhostColor(SDL_Color color);
+    void setGhostFlashColor();
+    void setGhostFrightenedColor();
     void setMode(Mode mode);
 
 protected:
@@ -68,12 +70,19 @@ private:
     static constexpr int GHOST_VEL            = GameConst::VELOCITY_TILES_PER_SEC * 75 / 10;
     static constexpr int GHOST_VEL_FRIGHTENED = GameConst::VELOCITY_TILES_PER_SEC * 50 / 10;
 
+    static constexpr SDL_Color GHOST_FRIGHTENED_COLOR = { 63, 63, 255, 255 };
+    static constexpr SDL_Color GHOST_FLASH_COLOR = { 255, 255, 255, 255 };
+
     SDL_Texture *ghostTexture;
+    SDL_Texture *ghostEatenTexture;
     SDL_Texture *targetTileTexture;
 
     Entity2D currTile;
 
+    bool reverseOrientation;
+
     Orientation computeOrientationToTile(Entity2D targetTile);
+    void setGhostColor(SDL_Color color);
 
     virtual void initChild() = 0;
     virtual Entity2D getChaseTargetTile() = 0;

@@ -17,7 +17,7 @@ void Clyde::initChild() {
 
     scatterTargetTile = { 0, 34 };
 
-    ghostColor = { 255, 127, 0, 255 };
+    ghostColor = { 255, 127, 31, 255 };
 }
 
 Entity2D Clyde::getChaseTargetTile() {

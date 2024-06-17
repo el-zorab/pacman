@@ -17,7 +17,7 @@ void Inky::initChild() {
 
     scatterTargetTile = { 27, 34 };
 
-    ghostColor = { 0, 255, 255, 255 };
+    ghostColor = { 31, 255, 255, 255 };
 }
 
 Entity2D Inky::getChaseTargetTile() {
