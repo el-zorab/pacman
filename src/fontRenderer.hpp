@@ -8,7 +8,7 @@ class FontRenderer {
 public:
     FontRenderer(std::string filename, int ptsize, bool exitOnError = true);
     void close();
-
+    TTF_Font *getFont();
     void renderText(SDL_Renderer *renderer, std::string text, int x, int y, SDL_Color color);
     
 private:

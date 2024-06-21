@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <fstream>
 #include <memory>
 #include <SDL2/SDL.h>
 #include <string>
@@ -25,8 +26,7 @@ public:
     void init(std::string title, int x, int y);
     void close();
 
-    bool isGameRunning();
-    void stopRunning();
+    bool shouldQuit();
 
     SDL_Renderer *getRenderer();
 
@@ -35,8 +35,6 @@ public:
 
     Pacman &getPacman();
     Ghost &getBlinky();
-
-    void renderText(std::string text, int x, int y, SDL_Color color);
     
     void handleEvents();
     void update();
@@ -50,10 +48,34 @@ private:
     int windowWidth;
     int windowHeight;
     SDL_Renderer *renderer;
-    bool gameRunning;
-    int gameScore;
 
-    Entity2D mousePos;
+    enum class GameState {
+        WAITING_FOR_START,
+        RUNNING,
+        WIN_LEVEL,
+        LOST_LIFE,
+        LOST_GAME,
+        QUIT
+    };
+    GameState gameState;
+    int gameLevel;
+    bool gameStateWaiting;
+    int gameStateWaitMs;
+    std::unique_ptr<Timer> gameStateWaitTimer;
+
+    int remainingLives;
+    int gameScore;
+    int gameHighscore;
+    std::ifstream gameHighscoreFileIn;
+    std::ofstream gameHighscoreFileOut;
+
+    static int constexpr GAME_LIVES = 3;
+
+    static int constexpr GAME_SCORE_PELLET = 10;
+    static int constexpr GAME_SCORE_ENERGIZER = 50;
+
+    SDL_Texture *waitingForStartTexture;
+    SDL_Texture *gameLostTexture;
 
     std::unique_ptr<FontRenderer> fontRenderer;
     std::unique_ptr<TextureManager> textureManager;
@@ -71,10 +93,6 @@ private:
     static constexpr int GHOST_HOUSE_HEIGHT = 6;
     static constexpr SDL_Rect GHOST_HOUSE_GATE_RECT = { 13 * GameConst::TILE_SIZE, 15 * GameConst::TILE_SIZE + GameConst::TILE_SIZE / 2 - GHOST_HOUSE_HEIGHT / 2, 2 * GameConst::TILE_SIZE, GHOST_HOUSE_HEIGHT };
     static constexpr SDL_Color GHOST_HOUSE_GATE_COLOR = { 255, 127, 255, 255 };
-
-    static constexpr int EATEN_PELLETS_PINKY_EXIT = 0;
-    static constexpr int EATEN_PELLETS_INKY_EXIT  = 30;
-    static constexpr int EATEN_PELLETS_CLYDE_EXIT = 60;
 
     std::array<int, Ghost::GHOST_COUNT> ghostsExitMinEatenPellets;
 
@@ -95,14 +113,25 @@ private:
 
     bool ghostsFrightened;
     std::unique_ptr<Timer> ghostsFrightenedTimer;
+    
+    static int constexpr GHOST_EATEN_POINTS_BASE = 200;
+    static int constexpr GHOST_EATEN_POINTS_MUL  = 2;
+    int ghostEatenPoints;
 
-    bool ghostsFlashing;
     std::unique_ptr<Timer> ghostsFlashingTimer;
 
     double frameTimeAccumulator;
     std::unique_ptr<Timer> frameTimer;
 
-    void updatePhysicsFrame(int const deltaTime);
-    void renderBackground();
+    void startLevel();
+    void startNewLevel();
+    void startGame();
+    void updateFrame();
+    void updateRunningFrame(int const deltaTime);
+    void renderText(std::string text, int x, int y, SDL_Color color);
+    void renderClear();
     void renderGhostHouseGate();
+    void renderRemainingLives();
+    void renderText();
+    void renderMap();
 };

@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 
     game.init("PACMAN", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
-    while (game.isGameRunning()) {
+    while (!game.shouldQuit()) {
         game.handleEvents();
         game.update();
         game.render();

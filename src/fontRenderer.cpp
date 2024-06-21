@@ -16,6 +16,10 @@ void FontRenderer::close() {
     font = nullptr;
 }
 
+TTF_Font *FontRenderer::getFont() {
+    return font;
+}
+
 void FontRenderer::renderText(SDL_Renderer *renderer, std::string text, int x, int y, SDL_Color color) {
     SDL_Surface *surface = TTF_RenderText_Blended(font, text.c_str(), color);
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);

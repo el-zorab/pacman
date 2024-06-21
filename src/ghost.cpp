@@ -10,13 +10,11 @@ Ghost::Ghost() {}
 void Ghost::init() {
     ghostTexture      = Game::getInstance().getTextureManager().loadTexture("ghost.png");
     ghostEatenTexture = Game::getInstance().getTextureManager().loadTexture("ghost_eaten.png");
-    targetTileTexture = Game::getInstance().getTextureManager().loadTexture("target_tile.png");
 
     initChild();
 
     SDL_SetTextureColorMod(ghostTexture,      ghostColor.r, ghostColor.g, ghostColor.b);
     SDL_SetTextureColorMod(ghostEatenTexture, GHOST_FRIGHTENED_COLOR.r, GHOST_FRIGHTENED_COLOR.g, GHOST_FRIGHTENED_COLOR.b);
-    SDL_SetTextureColorMod(targetTileTexture, ghostColor.r, ghostColor.g, ghostColor.b);
     
     currTile = currPos / UNITS_PER_TILE;
     mode = Ghost::Mode::SCATTER;
@@ -169,21 +167,6 @@ void Ghost::update(int deltaTime) {
             
             }
         }
-        
-        if (scatterTargetTile.x == 25 && scatterTargetTile.y == 0) {
-            std::string str;
-            if (state == State::NORMAL_OPERATION) {
-                str = "NORMAL_OPERATION";
-            } else if (state == State::WANDERING) {
-                str = "WANDERING";
-            } else if (state == State::EXITING_HOUSE) {
-                str = "EXITING_HOUSE";
-            } else if (state == State::EATEN) {
-                str = "EATEN";
-            } else if (state == State::ENTERING_HOUSE) {
-                str = "ENTERING_HOUSE";
-            }
-        }
     }
 }
 
@@ -197,20 +180,14 @@ void Ghost::render() {
     };
     SDL_Texture *textureToRender = state == State::EATEN ? ghostEatenTexture : ghostTexture;
     SDL_RenderCopy(renderer, textureToRender, nullptr, &ghostRect);
-
-    // SDL_Rect targetTileRect = { getChaseTargetTile().x * TILE_SIZE, getChaseTargetTile().y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-    // SDL_RenderCopy(renderer, targetTileTexture, nullptr, &targetTileRect);
-
-    // SDL_Rect currTileRect = { currTile.x * TILE_SIZE, currTile.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-    // SDL_Color rectColor = getTextureColor();
-    // SDL_SetRenderDrawColor(renderer, rectColor.r, rectColor.g, rectColor.b, rectColor.a);
-    // SDL_RenderDrawRect(renderer, &currTileRect);
-
-    // SDL_RenderDrawRect(renderer, &ghostRect);
 }
 
 Entity2D Ghost::getCurrentTile() {
     return currTile;
+}
+
+Entity2D Ghost::getCurrentPos() {
+    return currPos;
 }
 
 bool Ghost::isEaten() {

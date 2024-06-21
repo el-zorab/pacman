@@ -31,6 +31,15 @@ Pacman::Pacman() {
     animationTimer->start();
 }
 
+void Pacman::reset() {
+    currTile.x = 13;
+    currTile.y = 20;
+    orientation = desiredOrientation = Orientation::UP;
+
+    currPos = currTile * UNITS_PER_TILE;
+    currPos.x += UNITS_PER_TILE / 2;
+}
+
 void Pacman::update(int deltaTime) {
     Entity2D orientationVector = orientationToVector(orientation);
     Entity2D desiredOrientationVector = orientationToVector(desiredOrientation);
@@ -105,14 +114,18 @@ void Pacman::render() {
     };
     SDL_Texture *texture = animationIndex ? textureUnoriented : textureOriented;
     SDL_RenderCopyEx(renderer, texture, nullptr, &pacmanRect, orientationToDeg(orientation), nullptr, SDL_FLIP_NONE);
-    
-    // SDL_Rect currTileRect = { currTile.x * TILE_SIZE + 1, currTile.y * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2 };
-    // SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-    // SDL_RenderDrawRect(renderer, &currTileRect);
 }
 
 Entity2D Pacman::getCurrentTile() {
     return currTile;
+}
+
+Entity2D Pacman::getCurrentPos() {
+    return currPos;
+}
+
+SDL_Texture *Pacman::getTextureOriented() {
+    return textureOriented;
 }
 
 Orientation Pacman::getOrientation() {

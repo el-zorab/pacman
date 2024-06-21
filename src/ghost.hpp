@@ -29,6 +29,7 @@ public:
     void render();
 
     Entity2D getCurrentTile();
+    Entity2D getCurrentPos();
     bool isEaten();
     bool isFrightened();
     bool isRespawned();
@@ -75,7 +76,6 @@ private:
 
     SDL_Texture *ghostTexture;
     SDL_Texture *ghostEatenTexture;
-    SDL_Texture *targetTileTexture;
 
     Entity2D currTile;
 

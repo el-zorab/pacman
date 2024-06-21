@@ -1,5 +1,4 @@
 #include <cmath>
-#include <fstream>
 #include <stdio.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -48,13 +47,24 @@ void Game::init(std::string title, int x, int y) {
     SDL_Rect rendererViewport = { GameConst::BORDER_SIZE, GameConst::BORDER_SIZE, GameConst::WINDOW_WIDTH, GameConst::WINDOW_HEIGHT };
     SDL_RenderSetViewport(renderer, &rendererViewport);
 
-    gameRunning = true;
-    gameScore = 0;
-    
-    fontRenderer = std::make_unique<FontRenderer>("jetbrains_mono_regular.ttf", 2 * GameConst::TILE_SIZE);
+    gameState = GameState::WAITING_FOR_START;
+    gameStateWaitTimer = std::make_unique<Timer>();
+    gameStateWaitTimer->start();
+
+    gameHighscoreFileIn.open("res/highscore.dat");
+    gameHighscoreFileIn >> gameHighscore;
+    gameHighscoreFileIn.close();
+
+    gameHighscoreFileOut.open("res/highscore.dat");
+
+    fontRenderer = std::make_unique<FontRenderer>("font.ttf", 3 * GameConst::TILE_SIZE / 2);
     textureManager = std::make_unique<TextureManager>();
     tilingManager = std::make_unique<TilingManager>();
     pelletManager = std::make_unique<PelletManager>();
+    pelletManager->init();
+
+    waitingForStartTexture = textureManager->loadTexture("waiting_for_start.png");
+    gameLostTexture = textureManager->loadTexture("game_lost.png");
 
     pacman = std::make_unique<Pacman>();
 
@@ -62,9 +72,6 @@ void Game::init(std::string title, int x, int y) {
     ghosts[Ghost::Name::PINKY] = std::make_unique<Pinky>();
     ghosts[Ghost::Name::INKY] = std::make_unique<Inky>();
     ghosts[Ghost::Name::CLYDE] = std::make_unique<Clyde>();
-    for (auto const &ghost : ghosts) {
-        ghost->init();
-    }
 
     ghostsExitMinEatenPellets[Ghost::Name::BLINKY] = 0;
     ghostsExitMinEatenPellets[Ghost::Name::PINKY]  = 0;
@@ -80,18 +87,10 @@ void Game::init(std::string title, int x, int y) {
     ghostModes.push_back({ Ghost::Mode::SCATTER, 5000 });
     ghostModes.push_back({ Ghost::Mode::CHASE,   -1 });
     
-    ghostModeCurr = 0;
     currModeTimer = std::make_unique<Timer>();
-    currModeTimer->start();
 
-    for (auto const &ghost : ghosts) {
-        ghost->setMode(ghostModes[0].mode);
-    }
-
-    ghostsFrightened = false;
     ghostsFrightenedTimer = std::make_unique<Timer>();
 
-    ghostsFlashing = true;
     ghostsFlashingTimer = std::make_unique<Timer>();
     ghostsFlashingTimer->start();
 
@@ -100,7 +99,44 @@ void Game::init(std::string title, int x, int y) {
     frameTimer->start();
 }
 
+void Game::startLevel() {
+    pacman->reset();
+    for (auto const &ghost : ghosts) {
+        ghost->init();
+    }
+
+    ghostModeCurr = 0;
+    currModeTimer->start();
+
+    for (auto const &ghost : ghosts) {
+        ghost->setMode(ghostModes[0].mode);
+    }
+
+    ghostsFrightened = false;
+
+    frameTimeAccumulator = 0.0;
+    frameTimer->start();
+}
+
+void Game::startNewLevel() {
+    pelletManager->init();
+    startLevel();
+}
+
+void Game::startGame() {
+    pelletManager->init();
+    remainingLives = GAME_LIVES - 1;
+    gameScore = 0;
+    gameLevel = 1;
+    gameStateWaiting = false;
+    gameStateWaitMs = 0;
+    startNewLevel();
+}
+
 void Game::close() {
+    gameHighscoreFileOut << gameHighscore;
+    gameHighscoreFileOut.close();
+
     fontRenderer->close();
     textureManager->close();
 
@@ -114,12 +150,8 @@ void Game::close() {
     SDL_Quit();
 }
 
-bool Game::isGameRunning() {
-    return gameRunning;
-}
-
-void Game::stopRunning() {
-    gameRunning = false;
+bool Game::shouldQuit() {
+    return gameState == GameState::QUIT;
 }
 
 SDL_Renderer *Game::getRenderer() {
@@ -149,55 +181,97 @@ void Game::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
-            stopRunning();
+            gameState = GameState::QUIT;
         } else if (event.type == SDL_KEYDOWN) {
             switch (event.key.keysym.sym) {
+                case SDLK_ESCAPE:
+                    gameState = GameState::QUIT;
+                    return;
+                case SDLK_RETURN:
+                    if (gameState == GameState::WAITING_FOR_START) {
+                        gameState = GameState::RUNNING;
+                        startGame();
+                    }
+                    break;
                 case SDLK_LEFT:
                 case SDLK_a:
-                    pacman->setDesiredOrientation(Orientation::LEFT);
+                    if (gameState == GameState::RUNNING) pacman->setDesiredOrientation(Orientation::LEFT);
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
-                    pacman->setDesiredOrientation(Orientation::RIGHT);
+                    if (gameState == GameState::RUNNING) pacman->setDesiredOrientation(Orientation::RIGHT);
                     break;
                 case SDLK_UP:
                 case SDLK_w:
-                    pacman->setDesiredOrientation(Orientation::UP);
+                    if (gameState == GameState::RUNNING) pacman->setDesiredOrientation(Orientation::UP);
                     break;
                 case SDLK_DOWN:
                 case SDLK_s:
-                    pacman->setDesiredOrientation(Orientation::DOWN);
-                    break;
-                case SDLK_1:
-                    currModeTimer->pause();
-                    break;
-                case SDLK_2:
-                    currModeTimer->unpause();
+                    if (gameState == GameState::RUNNING) pacman->setDesiredOrientation(Orientation::DOWN);
                     break;
             }
-        } else if (event.type == SDL_MOUSEMOTION) {
-            SDL_GetMouseState(&mousePos.x, &mousePos.y);
         }
     }
 }
 
 void Game::update() {
-    frameTimeAccumulator += frameTimer->getMiliseconds();
+    frameTimeAccumulator += std::min(frameTimer->getMiliseconds(), 4 * PHYSICS_FRAME_DELTA_TIME);
     frameTimer->start();
 
-    while (frameTimeAccumulator >= PHYSICS_FRAME_DELTA_TIME && gameRunning) {        
-        updatePhysicsFrame(PHYSICS_FRAME_DELTA_TIME);
+    while (frameTimeAccumulator >= PHYSICS_FRAME_DELTA_TIME) {
+        if (gameState != GameState::RUNNING) {
+            updateFrame();
+            frameTimer->pause();
+        } else {
+            updateRunningFrame(PHYSICS_FRAME_DELTA_TIME);
+            frameTimer->unpause();
+        }
+
         frameTimeAccumulator -= PHYSICS_FRAME_DELTA_TIME;
     }
 }
 
-void Game::updatePhysicsFrame(int const deltaTime) {
+void Game::updateFrame() {
+    if (gameStateWaitMs != 0) {
+        if (!gameStateWaiting) {
+            gameStateWaiting = true;
+            gameStateWaitTimer->start();
+        }
+
+        if (gameStateWaitTimer->getMiliseconds() < gameStateWaitMs) {
+            return;
+        } else {
+            gameStateWaitMs = 0;
+            gameStateWaiting = false;
+        }
+    }
+
+    if (gameState == GameState::WIN_LEVEL) {
+        gameLevel++;
+        gameState = GameState::RUNNING;
+        startNewLevel();
+    } else if (gameState == GameState::LOST_LIFE) {
+        remainingLives--;
+        gameState = GameState::RUNNING;
+        startLevel();
+    } else if (gameState == GameState::LOST_GAME) {
+        if (gameScore > gameHighscore) {
+            gameHighscore = gameScore;
+        }
+        gameState = GameState::WAITING_FOR_START;
+        startGame();
+    }
+}
+
+void Game::updateRunningFrame(int const deltaTime) {
     pacman->update(deltaTime);
 
     PelletType eatenPelletType = pelletManager->removePellet(pacman->getCurrentTile().x, pacman->getCurrentTile().y);
     if (eatenPelletType != PelletType::NONE) {
         if (eatenPelletType == PelletType::ENERGIZER) {
-            ghostsFlashing = !ghostsFrightened;
+            if (!ghostsFrightened) {
+                ghostEatenPoints = GHOST_EATEN_POINTS_BASE;
+            }
             ghostsFrightened = true;
             ghostsFrightenedTimer->start();
             ghostsFlashingTimer->start();
@@ -208,15 +282,14 @@ void Game::updatePhysicsFrame(int const deltaTime) {
                 ghost->setMode(Ghost::Mode::FRIGHTENED);
             }
 
-            gameScore += 50;
+            gameScore += GAME_SCORE_ENERGIZER;
         } else if (eatenPelletType == PelletType::PELLET) {
-            gameScore += 10;
+            gameScore += GAME_SCORE_PELLET;
         }
     }
 
     if (ghostsFrightened && ghostsFrightenedTimer->getMiliseconds() > GHOST_FRIGHTENED_MS) {
         ghostsFrightened = false;
-        ghostsFlashing = false;
         currModeTimer->unpause();
         pacman->setGhostsFrightened(false);
 
@@ -225,7 +298,7 @@ void Game::updatePhysicsFrame(int const deltaTime) {
         }
     }
 
-    if (ghostsFrightened && ghostsFlashing && ghostsFrightenedTimer->getMiliseconds() > GHOST_START_FLASHING_MS) {
+    if (ghostsFrightened && ghostsFrightenedTimer->getMiliseconds() > GHOST_START_FLASHING_MS) {
         for (auto const &ghost : ghosts) {
             if (ghost->isFrightened() && !ghost->isEaten()) {
                 if (ghostsFlashingTimer->getMiliseconds() < GHOST_FLASHING_INTERVAL_MS) {
@@ -258,12 +331,21 @@ void Game::updatePhysicsFrame(int const deltaTime) {
     for (auto const &ghost : ghosts) {
         ghost->update(deltaTime);
 
-        if (ghost->getCurrentTile() == pacman->getCurrentTile()) {
+        Entity2D deltaPos = ghost->getCurrentPos() - pacman->getCurrentPos();
+        if (std::abs(deltaPos.x) < UNITS_PER_TILE && std::abs(deltaPos.y) < UNITS_PER_TILE) {
             if (ghost->isFrightened()) {
-                ghost->setEaten();
+                if (!ghost->isEaten()) {
+                    ghost->setEaten();
+                    SDL_Log("%d\n", ghostEatenPoints);
+                    gameScore += ghostEatenPoints;
+                    ghostEatenPoints *= GHOST_EATEN_POINTS_MUL;
+                }
             } else {
-                stopRunning();
-                SDL_Log("You died!\n");
+                if (remainingLives == 0) {
+                    gameState = GameState::LOST_GAME;
+                } else {
+                    gameState = GameState::LOST_LIFE;
+                }
             }
         }
 
@@ -273,68 +355,88 @@ void Game::updatePhysicsFrame(int const deltaTime) {
     }
 
     if (pelletManager->getRemainingPellets() == 0) {
-        stopRunning();
-        SDL_Log("You win!\n");
+        gameState = GameState::WIN_LEVEL;
     }
 }
 
 void Game::render() {
-    SDL_SetRenderDrawColor(renderer, BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b, BACKGROUND_COLOR.a);
-    SDL_RenderClear(renderer);
-    // renderBackground();
-    tilingManager->renderTiles();
-    renderGhostHouseGate();
-    pelletManager->renderPellets();
+    renderClear();
 
-    pacman->render();
-    for (auto const &ghost : ghosts) {
-        ghost->render();
+    if (gameState == GameState::WAITING_FOR_START) {
+        SDL_RenderCopy(renderer, waitingForStartTexture, nullptr, nullptr);
+
+        std::string highscoreText = "HIGHSCORE: " + std::to_string(gameHighscore);
+        int textWidth, textHeight;
+        TTF_SizeText(fontRenderer->getFont(), highscoreText.c_str(), &textWidth, &textHeight);
+        renderText(highscoreText, (GameConst::WINDOW_WIDTH - textWidth) / 2, 12 * GameConst::TILE_SIZE, TEXT_COLOR);
+
+        SDL_RenderPresent(renderer);
+
+    } else if (gameState == GameState::RUNNING) {
+        renderMap();
+        pacman->render();
+        for (auto const &ghost : ghosts) {
+            ghost->render();
+        }
+        SDL_RenderPresent(renderer);
+
+    } else if (gameState == GameState::LOST_LIFE) {
+        renderMap();
+        pacman->render();
+        for (auto const &ghost : ghosts) {
+            Entity2D deltaPos = ghost->getCurrentPos() - pacman->getCurrentPos();
+            if (std::abs(deltaPos.x) < UNITS_PER_TILE && std::abs(deltaPos.y) < UNITS_PER_TILE) {
+                ghost->render();
+                break;
+            }
+        }
+        SDL_RenderPresent(renderer);
+        gameStateWaitMs = 2000;
+
+    } else if (gameState == GameState::LOST_GAME) {
+        SDL_RenderCopy(renderer, gameLostTexture, nullptr, nullptr);
+
+        std::string scoreText = "SCORE: " + std::to_string(gameScore);
+        int textWidth, textHeight;
+        TTF_SizeText(fontRenderer->getFont(), scoreText.c_str(), &textWidth, &textHeight);
+        renderText(scoreText, (GameConst::WINDOW_WIDTH - textWidth) / 2, 12 * GameConst::TILE_SIZE, TEXT_COLOR);
+
+        SDL_RenderPresent(renderer);
+        gameStateWaitMs = 3000;
     }
-
-    // SDL_Rect mouseTileRect = {
-    //     (mousePos.x - GameConst::BORDER_SIZE) / GameConst::TILE_SIZE * GameConst::TILE_SIZE,
-    //     (mousePos.y - GameConst::BORDER_SIZE) / GameConst::TILE_SIZE * GameConst::TILE_SIZE,
-    //     GameConst::TILE_SIZE,
-    //     GameConst::TILE_SIZE
-    // };
-    // SDL_SetRenderDrawColor(renderer, TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, TEXT_COLOR.a);
-    // SDL_RenderFillRect(renderer, &mouseTileRect);
-
-    // renderText("X=" + std::to_string(mouseTileRect.x / GameConst::TILE_SIZE), 0, 0, TEXT_COLOR);
-    // renderText("Y=" + std::to_string(mouseTileRect.y / GameConst::TILE_SIZE), 0, GameConst::TILE_SIZE, TEXT_COLOR);
-
-    // if (ghostsFrightened) {
-    //     renderText("MODE_INDEX=FRIGHTENED [" + std::to_string(ghostsFrightenedTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {127, 255, 127, 255});
-    // } else if (ghostModes[ghostModeCurr].mode == Ghost::Mode::CHASE) {
-    //     renderText("MODE_INDEX=CHASE [" + std::to_string(currModeTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {255, 127, 127, 255});
-    // } else if (ghostModes[ghostModeCurr].mode == Ghost::Mode::SCATTER) {
-    //     renderText("MODE_INDEX=SCATTER [" + std::to_string(currModeTimer->getMiliseconds()) + "]", 0, 2 * GameConst::TILE_SIZE, {127, 127, 255, 255});
-    // }
-    // renderText("EAT_PELL=" + std::to_string(pelletManager->getEatenPellets()), 0, 3 * GameConst::TILE_SIZE, {255, 255, 255, 255});
-
-    renderText("SCORE: " + std::to_string(gameScore), 0, GameConst::TILE_SIZE, {255, 255, 255, 255});
-
-    SDL_RenderPresent(renderer);
 }
 
-void Game::renderBackground() {   
-    for (int i = 0; i < GameConst::TILE_COLS; i++) {
-        for (int j = 0; j < GameConst::TILE_ROWS; j++) {
-            SDL_Rect tileRect = {
-                GameConst::TILE_SIZE * i,
-                GameConst::TILE_SIZE * j,
-                GameConst::TILE_SIZE,
-                GameConst::TILE_SIZE
-            };
-
-            SDL_Color tileColor = (i + j) % 2 == 0 ? TILE_COLOR_A : TILE_COLOR_B;
-            SDL_SetRenderDrawColor(renderer, tileColor.r, tileColor.g, tileColor.b, tileColor.a);
-            SDL_RenderFillRect(renderer, &tileRect);
-        }
-    }
+void Game::renderClear() {
+    SDL_SetRenderDrawColor(renderer, BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b, BACKGROUND_COLOR.a);
+    SDL_RenderClear(renderer);
 }
 
 void Game::renderGhostHouseGate() {
     SDL_SetRenderDrawColor(renderer, GHOST_HOUSE_GATE_COLOR.r, GHOST_HOUSE_GATE_COLOR.g, GHOST_HOUSE_GATE_COLOR.b, GHOST_HOUSE_GATE_COLOR.a);
     SDL_RenderFillRect(renderer, &GHOST_HOUSE_GATE_RECT);
+}
+
+void Game::renderRemainingLives() {
+    for (int i = 0; i < remainingLives; i++) {
+        SDL_Rect rect = {
+            GameConst::TILE_SIZE / 2 + i * GameConst::ENTITY_TEXTURE_SIZE,
+            GameConst::WINDOW_HEIGHT - GameConst::ENTITY_TEXTURE_SIZE,
+            GameConst::ENTITY_TEXTURE_SIZE,
+            GameConst::ENTITY_TEXTURE_SIZE
+        };
+        SDL_RenderCopy(renderer, pacman->getTextureOriented(), nullptr, &rect);
+    }
+}
+
+void Game::renderText() {
+    renderText("LEVEL " + std::to_string(gameLevel), 0, 0, TEXT_COLOR);
+    renderText("SCORE " + std::to_string(gameScore), 0, 3 * GameConst::TILE_SIZE / 2, TEXT_COLOR);
+}
+
+void Game::renderMap() {
+    tilingManager->renderTiles();
+    renderGhostHouseGate();
+    pelletManager->renderPellets();
+    renderRemainingLives();
+    renderText();
 }

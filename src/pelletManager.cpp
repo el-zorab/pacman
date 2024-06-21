@@ -10,6 +10,10 @@ const std::string PELLET_FILE_PATH = "res/pellets.dat";
 const SDL_Color PELLET_COLOR = { 255, 255, 255, 255 };
 
 PelletManager::PelletManager() {
+    init();
+}
+
+void PelletManager::init() {
     totalPellets = 0;
     std::ifstream pelletFile(PELLET_FILE_PATH);
 

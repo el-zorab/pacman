@@ -13,11 +13,14 @@ class Pacman {
 
 public:
     Pacman();
+    void reset();
 
     void update(int deltaTime);
     void render();
 
     Entity2D getCurrentTile();
+    Entity2D getCurrentPos();
+    SDL_Texture *getTextureOriented();
     Orientation getOrientation();
     void setDesiredOrientation(Orientation desiredOrientation);
     void setGhostsFrightened(bool ghostsFrightened);
