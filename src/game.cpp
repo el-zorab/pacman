@@ -336,7 +336,6 @@ void Game::updateRunningFrame(int const deltaTime) {
             if (ghost->isFrightened()) {
                 if (!ghost->isEaten()) {
                     ghost->setEaten();
-                    SDL_Log("%d\n", ghostEatenPoints);
                     gameScore += ghostEatenPoints;
                     ghostEatenPoints *= GHOST_EATEN_POINTS_MUL;
                 }

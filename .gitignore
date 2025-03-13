@@ -2,3 +2,4 @@ build/
 app
 app.exe
 .vscode
+res/highscore.dat
